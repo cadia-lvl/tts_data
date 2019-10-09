@@ -1,0 +1,9 @@
+# data stuff
+data/
+checkpoints/
+
+# development stuff
+env/
+__pycache__/
+.mypy_cache/
+.vscode/

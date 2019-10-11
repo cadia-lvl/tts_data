@@ -33,6 +33,7 @@ phoneme_end = '</os>'
 phoneme_pad = '<pad>'
 phoneme_unk = '<unk>'
 phoneme_other = ['<unk>', '<pad>']
+
 p_vocab = [phoneme_unk, phoneme_pad, phoneme_start, phoneme_end] + phonemes
 
 
@@ -67,7 +68,16 @@ class PronSet(Dataset):
         self.p_vocab = p_vocab
         self.reverse_input = reverse_input
 
+    def summary(self):
+        return '''
+        *********************************
+        Num samples : {}
+        *********************************
+        '''.format(len(self.graphemes))
+
     def get_grapheme(self, i: int):
+        # TODO : refactor this method and others to e.g. `get_word()`
+        # to avoid confusion
         '''
         Input arguments:
         * i (int): The index of the grapheme to fetch
@@ -84,8 +94,21 @@ class PronSet(Dataset):
         return torch.Tensor(grapheme).to(dtype=torch.long)
 
     def tensor_to_grapheme(self, tensor):
+        '''
+        Input arguments:
+        * tensor (torch.Tensor): A
+        Returns
+        '''
         for i in range(tensor.shape[0]):
             print("".join(self.idx2grapheme[t.item()] for t in tensor[i, :]))
+
+    def idxs_to_phonemes(self, idx_list):
+        return " ".join(self.idx2phoneme[idx] for idx in idx_list)
+
+    def grapheme_to_tensor(self, grapheme):
+        grapheme = [self.grapheme2idx[g] for g in grapheme]
+        return torch.Tensor(grapheme).to(dtype=torch.long)
+
 
     def get_phoneme(self, i: int):
         '''
@@ -222,14 +245,3 @@ def extract_pron(
                 preprocess_phoneme(data[p_ind]) if normalize
                 else data[p_ind])
     return graphemes, phonemes
-
-
-'''
-if __name__ == '__main__':
-    graphemes, phonemes = extract_pron('./data/prondict_ice.txt')
-    ds = PronSet(graphemes, phonemes)
-
-    idx, batch = next(enumerate(ds.get_loader()))
-    print(batch[0].shape, batch[1].shape)
-    ds.tensor_to_grapheme(batch[0])
-'''

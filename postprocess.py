@@ -5,31 +5,41 @@ class Beam(object):
     Ordered beam of candidate outputs.
     See https://github.com/MaximumEntropy/Seq2Seq-PyTorch/ for more
     """
-    def __init__(self, size, pad=1, bos=2, eos=3, device=torch.device('cpu')):
-        """Initialize params."""
+    def __init__(self, size, pad :int=1, bos :int=2, eos :int=3, device=torch.device('cpu')):
+        '''
+        Input arguments:
+        * size (int): The beam size
+        * pad (int): The index of the <pad> token in the phoneme vocabulary
+        * bos (int): The index of the <bos> token in the phoneme vocabulary
+        * eos (int): The index of the <bos> token in the phoneme vocabulary
+        '''
+
         self.size = size
-        self.done = False
         self.pad = pad
         self.bos = bos
         self.eos = eos
+        self.done = False
 
         self.device = device
 
         # The score for each translation on the beam.
-        self.scores = torch.Tensor(size, device=self.device,
+        self.scores = torch.Tensor(size).to(device=self.device,
             dtype=torch.float).zero_()
 
         # The backpointers at each time-step.
         self.prevKs = []
 
         # The outputs at each time-step.
-        self.nextYs = [torch.Tensor(size, device=self.device,
+        self.nextYs = [torch.Tensor(size).to(device=self.device,
             dtype=torch.long).fill_(self.pad)]
         self.nextYs[0][0] = self.bos
 
-    # Get the outputs for the current timestep.
     def get_current_state(self):
-        """Get state of beam."""
+        '''
+        Get the outputs for the current timestep.
+
+        Returns: A (size) shaped tensor
+        '''
         return self.nextYs[-1]
 
     # Get the backpointers for the current timestep.

@@ -1,6 +1,8 @@
 # data stuff
 data/
 checkpoints/
+results/
+log.txt
 
 # development stuff
 env/

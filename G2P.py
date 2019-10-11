@@ -1,14 +1,6 @@
-import argparse
-import os
-import time
-
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
-import torch.optim as optim
-from torch.nn.utils import clip_grad_norm
-import torchtext.data as data
 
 from postprocess import Beam
 
@@ -16,20 +8,18 @@ from postprocess import Beam
 class G2P(nn.Module):
     def __init__(
             self, num_g: int, num_p: int, emb_dim: int=256,
-            hidden_dim: int=256, beam_size: int=2, max_decode_len: int=20,
-            device=torch.device('cpu'), **kwargs):
+            hidden_dim: int=256, beam_size: int=2, max_decode_len: int=20, **kwargs):
         '''
         Input arguments:
         * num_g (int): The size of the grapheme vocabulary
         * num_p (int): The size of the phoneme voccabulary
         * emb_dim (int): The dimensionality of the character embeddings used
         * hidden_dim (int): The hidden dimensionality of the RNNs
-        * device (torch.device=cpu): The device used to store the model
         * beam_size (int=2): The size of decoding beams
         * max_decode_len (int=20): The maximum decoding output length
         '''
         super(G2P, self).__init__()
-        self.encoder = Encoder(num_g,  emb_dim, hidden_dim, device=device)
+        self.encoder = Encoder(num_g, emb_dim, hidden_dim)
         self.decoder = Decoder(num_p, emb_dim, hidden_dim)
 
         self.num_g = num_g
@@ -37,7 +27,6 @@ class G2P(nn.Module):
         self.emb_dim = emb_dim
         self.hidden_dim = hidden_dim
 
-        self.device = device
         self.beam_size = beam_size
         self.max_decode_len = max_decode_len
 
@@ -51,16 +40,16 @@ class G2P(nn.Module):
         Phoneme Embedding : in/out {}/{}
         Decoder RNN : in/hidden {}/{}
 
-        device : {}
+        Is cuda : {}
         beam size : {}
         max decoding length: {}
         *********************************
         '''.format(
             self.num_g, self.emb_dim, self.emb_dim, self.hidden_dim,
             self.num_p, self.emb_dim, self.emb_dim, self.hidden_dim,
-            self.device, self.beam_size, self.max_decode_len)
+            next(self.parameters()).is_cuda, self.beam_size, self.max_decode_len)
 
-    def forward(self, g_seq, p_seq=None):
+    def forward(self, g_seq, p_seq=None, device=torch.device('cpu')):
         '''
         Input arguments:
         * g_seq (torch.Tensor): A [bz, g_len] shaped tensor containing the
@@ -71,40 +60,42 @@ class G2P(nn.Module):
         the phoneme index values for each sample in the batch where p_len is
         the padded batch length of the phoneme input
         '''
-
-        context, h, c = self.encoder(g_seq)
+        context, h, c = self.encoder(g_seq, device=device)
         if p_seq is not None:
             # We are training
             return self.decoder(p_seq, h, c, context)
         else:
             # We are generating
-            assert g_seq.size(1) == 1  # make sure batch_size = 1
-            return self._generate(h, c, context)
+            assert g_seq.shape[0] == 1, "batch size must be one when testing"
+            return self._gen(h, c, context, device=device)
 
-    def _generate(self, h, c, context):
+    def _gen(self, h, c, context, device=torch.device('cpu')):
         '''
         Input arguments:
-        TODO: ADD DOCUMENT
+        * h (tensor): A (1 x hidden_dim) shaped tensor containinig the last hidden
+        emission from the encoder
+        * c (tensor): A (1 x hidden_dim) shaped tensor containing the last cell state
+        from the encoder
+        * context (tensor) A (1 x seq_g x hidden_dim) shaped tensor containing encoder
+        emissions for all encoder timesteps
         '''
-        beam = Beam(self.beam_size, device=self.device)
-        # Make a beam_size batch.
-        h = h.expand(beam.size, h.size(1))
-        c = c.expand(beam.size, c.size(1))
-        context = context.expand(beam.size, context.size(1), context.size(2))
+        beam = Beam(self.beam_size, device=device)
+        h = h.expand(beam.size, h.shape[1]) # (beam_sz x hidden_dim)
+        c = c.expand(beam.size, c.shape[1]) # (beam_sz x hidden_dim)
+        context = context.expand(beam.size, context.shape[1], context.shape[2]) # (beam_sz x seq_g x hidden_dim)
 
         for _ in range(self.max_decode_len):
-            x = beam.get_current_state()
-            o, h, c = self.decoder(Variable(x.unsqueeze(0)), h, c, context)
-            if beam.advance(o.data.squeeze(0)):
+            x = beam.get_current_state() # (beam_size)
+            o, h, c = self.decoder(x.unsqueeze(1), h, c, context)
+            if beam.advance(o.data.squeeze(1)):  # (beam_size x num_phones)
                 break
             h.data.copy_(h.data.index_select(0, beam.get_current_origin()))
             c.data.copy_(c.data.index_select(0, beam.get_current_origin()))
-        return torch.Tensor(beam.get_hyp(0)).to(
-            dtype=torch.long, device=self.device)
+        return torch.Tensor(beam.get_hyp(0)).to(dtype=torch.long, device=device)
 
 
 class Encoder(nn.Module):
-    def __init__(self, num_g: int, emb_dim: int, hidden_dim: int, device):
+    def __init__(self, num_g: int, emb_dim: int, hidden_dim: int):
         '''
         Input arguments:
         * num_g (int): The size of the grapheme vocabulary
@@ -117,8 +108,6 @@ class Encoder(nn.Module):
         #  self.lstm = nn.LSTMCell(emb_dim, hidden_dim)
         self.lstm = nn.LSTM(emb_dim, hidden_dim, batch_first=True)
         self.hidden_dim = hidden_dim
-
-        self.device = device
 
     def forward_2(self, g_seq):
         '''
@@ -144,7 +133,7 @@ class Encoder(nn.Module):
         o = torch.stack(o, dim=1)  # bz x seq_g x hidden_dim
         return o, h, c
 
-    def forward(self, g_seq):
+    def forward(self, g_seq, device=torch.device('cpu')):
         '''
         Input arguments:
         * g_seq (torch.Tensor): A (bz x seq_g) shaped tensor containing the
@@ -160,10 +149,10 @@ class Encoder(nn.Module):
         cell state of the RNN
         '''
         g_seq = self.embedding(g_seq)  # batch x seq_g x emb_dim
-        out, (h, c) = self.lstm(g_seq, self.init_hidden(g_seq.shape[0]))
+        out, (h, c) = self.lstm(g_seq, self.init_hidden(g_seq.shape[0], device=device))
         return out, h.squeeze(dim=0), c.squeeze(dim=0)
 
-    def init_hidden(self, bz: int):
+    def init_hidden(self, bz: int, device=torch.device('cpu')):
         '''
         Input arguments:
         * bz (int): The current batch size being used
@@ -176,9 +165,9 @@ class Encoder(nn.Module):
         '''
         return (
             torch.zeros((1, bz, self.hidden_dim)).to(
-                dtype=torch.float, device=self.device),
+                dtype=torch.float, device=device),
             torch.zeros((1, bz, self.hidden_dim)).to(
-                dtype=torch.float, device=self.device))
+                dtype=torch.float, device=device))
 
 
 class Decoder(nn.Module):
@@ -266,14 +255,3 @@ class Attention(nn.Module):
         weighted_context = attn.unsqueeze(1).bmm(context).squeeze(1)
         o = self.linear(torch.cat((h, weighted_context), 1))
         return attn, torch.tanh(o)
-
-
-if __name__ == '__main__':
-    from PronSet import g_vocab,  p_vocab, PronSet, extract_pron
-    graphemes, phonemes = extract_pron('./data/prondict_ice.txt')
-    ds = PronSet(graphemes, phonemes)
-    idx, batch = next(enumerate(ds.get_loader()))
-
-    model = G2P(len(g_vocab), len(p_vocab), 128, 256)
-
-    model(batch[0], batch[1])

@@ -7,10 +7,10 @@ from typing import List
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
 import torch.optim as optim
 from torch.nn.utils import clip_grad_norm
-import torchtext.data as data
+import Levenshtein
+
 
 from PronSet import PronSet, extract_pron
 from G2P import G2P
@@ -34,7 +34,9 @@ def load_data(path: str, splits: List[float], **kwargs):
     return ds, ds.split(*splits)
 
 
-def load_model(num_g: int, num_p: int, model_path: str, **kwargs):
+def load_model(
+    num_g: int, num_p: int, model_path: str, device=torch.device('cpu'),
+    **kwargs):
     '''
     Input arguments:
     * num_g (int): The size of the grapheme vocabulary
@@ -53,12 +55,12 @@ def load_model(num_g: int, num_p: int, model_path: str, **kwargs):
         model.load_state_dict(torch.load(model_path))
     else:
         print("A new model will be created.")
-    return model
+    return model.to(device)
 
 
 def train(
         model: G2P, train_ds: PronSet, val_ds: PronSet, ckp_path: str,
-        epochs: int=10, log_step: int=100, **kwargs):
+        epochs: int=10, log_step: int=100, device=torch.device('cpu'), **kwargs):
     '''
     Input arguments:
     * model (G2P): A G2P instance
@@ -76,13 +78,13 @@ def train(
     train_loss = 0.0
     best_val_loss = float('inf')
 
-    model.train()
     print("Starting training.")
     for epoch in range(epochs):
         print("Epoch {} / {}".format(epoch+1, epochs))
         for idx, batch in enumerate(dl):
-            output, _, _ = model(batch[0], batch[1][:, :-1].detach())
-            target = batch[1][:, 1:]
+            output, _, _ = model(
+                batch[0].to(device), batch[1][:, :-1].detach().to(device), device=device)
+            target = batch[1][:, 1:].to(device)
             loss = criterion(
                 output.view(output.shape[0] * output.shape[1], -1),
                 target.contiguous().view(target.shape[0] * target.shape[1]))
@@ -99,7 +101,7 @@ def train(
 
             if (idx + 1) % log_step == 0:
                 train_loss /= n_total  # compute the average so far
-                val_loss = validate(val_ds, model, criterion)
+                val_loss = validate(model, val_ds, criterion, device=device)
                 print(
                     "Batch: {}/{} | Train loss: {:.4f} | Val loss: {:.4f}"
                     .format(idx, len(dl), train_loss, val_loss))
@@ -109,10 +111,12 @@ def train(
                 if val_loss < best_val_loss:
                     print("Best validation loss reached, saving model.")
                     best_val_loss = val_loss
-                    torch.save(model.state_dict(), config.best_model)
+                    torch.save(model.state_dict(), ckp_path)
 
 
-def validate(model: G2P, val_ds: PronSet, criterion, **kwargs):
+def validate(
+        model: G2P, val_ds: PronSet, criterion, device=torch.device('cpu'),
+        **kwargs):
     '''
     Input arguments:
     * model (G2P): A G2P instance
@@ -130,29 +134,55 @@ def validate(model: G2P, val_ds: PronSet, criterion, **kwargs):
     model.eval()
     print("Starting Evaluation")
     for idx, batch in enumerate(dl):
-        output, _, _ = model(batch[0], batch[1][:, :-1])
-        target = batch[1][:, 1:]
+        output, _, _ = model(batch[0].to(device), batch[1][:, :-1].to(device), device=device)
+        target = batch[1][:, 1:].to(device)
         loss = criterion(output.squeeze(0), target.squeeze(0))
         val_loss += loss.item() * batch[0].shape[0]
+    model.train()
     return val_loss / len(dl)
 
 
+def test(model, test_ds, device=torch.device('cpu'), **kwargs):
+    def phoneme_error_rate(p_seq1, p_seq2):
+        p_vocab = set(p_seq1 + p_seq2)
+        p2c = dict(zip(p_vocab, range(len(p_vocab))))
+        c_seq1 = [chr(p2c[p]) for p in p_seq1]
+        c_seq2 = [chr(p2c[p]) for p in p_seq2]
+        return Levenshtein.distance(''.join(c_seq1),
+                                    ''.join(c_seq2)) / len(c_seq2)
+
+    test_per = test_wer = 0
+    dl = test_ds.get_loader(bz=1)
+    for idx, batch in enumerate(dl):
+        output = model(batch[0].to(device), device=device).tolist()
+        target = batch[1][:, 1:].to(device).squeeze(0).tolist()
+        # calculate per, wer here
+        per = phoneme_error_rate(output, target)
+        wer = int(output != target)
+        test_per += per  # batch_size = 1
+        test_wer += wer
+
+    test_per = test_per / len(dl) * 100
+    test_wer = test_wer / len(dl) * 100
+    print("Phoneme error rate (PER): {:.2f}\nWord error rate (WER): {:.2f}"
+          .format(test_per, test_wer))
+
 def main():
-    parser = {
-        'pron_path': './data/prondict_ice.txt',
-        'exp_name': 'g2p_ice',
-        'epochs': 50,
-        'batch_size': 100,
-        'max_len': 20,
-        'beam_size': 3,
-        'emb_dim': 500,
-        'hidden_dim': 500,
-        'log_step': 100,
-        'cuda': True,
-        'seed': 1337,
-        'result_dir': './results',
-        'data_splits': (0.9, 0.05, 0.05)}
-    args = argparse.Namespace(**parser)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('pron_path', default='./data/prondict_ice.txt', nargs='?')
+    parser.add_argument('exp_name', default='g2p_ice', nargs='?')
+    parser.add_argument('epochs', default=50, nargs='?')
+    parser.add_argument('batch_size', default=100, nargs='?')
+    parser.add_argument('max_len', default=20, nargs='?')
+    parser.add_argument('beam_size', default=3, nargs='?')
+    parser.add_argument('emb_dim', default=500, nargs='?')
+    parser.add_argument('hidden_dim', default=500, nargs='?')
+    parser.add_argument('log_step', default=2000, nargs='?')
+    parser.add_argument('cuda', default=True, nargs='?')
+    parser.add_argument('seed', default=1337, nargs='?')
+    parser.add_argument('result_dir', default='./results', nargs='?')
+    parser.add_argument('data_splits', default=(0.9, 0.05, 0.05), nargs='?')
+    args = parser.parse_args()
 
     print("{} Starting Setup {}".format(*[''.join('-'*25)]*2))
     # CUDA and reproducability stuff
@@ -165,7 +195,6 @@ def main():
         torch.cuda.manual_seed(args.seed)
     else:
         print("CPU will be used for inference")
-
     # Make sure directories exist
     exp_dir = os.path.join(args.result_dir, args.exp_name)
     ckp_path = os.path.join(exp_dir, 'mdl.ckpt')
@@ -175,6 +204,10 @@ def main():
 
     full_ds, (train_ds, val_ds, test_ds) = load_data(
         args.pron_path, args.data_splits, **vars(args))
+    print("Batch size: {}".format(args.batch_size))
+    print(train_ds.summary())
+    print(val_ds.summary())
+    print(test_ds.summary())
 
     model = load_model(
         full_ds.num_graphemes, full_ds.num_phonemes, ckp_path, **vars(args))
@@ -183,6 +216,9 @@ def main():
     print("{} Setup Complete {}".format(*[''.join('-'*25)]*2))
 
     train(model, train_ds, val_ds, ckp_path, **vars(args))
+
+    test(model, test_ds, **vars(args))
+
 
 if __name__ == '__main__':
     main()

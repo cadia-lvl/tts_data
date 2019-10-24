@@ -7,10 +7,9 @@ from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 
 from tqdm import tqdm
-from sequitur_tools import Sequitur
-import sequitur_tools as seqtools
+from sequitur_tools import get_phones
 
-from multi_sequitur import get_phones
+VALID_DIPHONES_PATH = './data/diphones/complete_ipa.txt'
 
 phonemes = [
     'a', 'r', 't', 's', 'n', 'ɪ', 'l', 'ʏ', 'k', 'm',
@@ -20,15 +19,49 @@ phonemes = [
     'kʰ', 'u', 'ɔː', 'x', 'œː', 'œy', 'n̥', 'cʰ', 'œyː', 'pʰ',
     'ɲ', 'ʏː', 'ç', 'ŋ̊', 'm̥', 'ʏi', 'ɲ̊', 'ɔi']
 
+diphones = []
+list_diphones  = []
+with open(VALID_DIPHONES_PATH) as i_f:
+    for line in i_f:
+        p1, p2 = line.split('\t')
+        diphones.append("".join([p1, p2.strip()]))
+        list_diphones.append((p1, p2))
+
 sentemes = [
     '<sp>', # A space between two words
     '<S>', # The start of a sentence
     '<E>' # The end of a sentence
 ]
 
-def get_diphones(phone_string):
+def get_diphones(phone_string: str):
+    '''
+    A string of space seperated phones phonetically
+    representing a single word, e.g. for the original word
+    "mig" we get phone_string="m ɪː ɣ"
+    '''
     phones = phone_string.split()
     return [phones[i]+phones[i+1] for i in range(len(phones) - 1)]
+
+def g2p_pickle(src_path, out_path, n_jobs=4):
+    '''
+    '''
+    import pickle
+
+    executor = ProcessPoolExecutor(max_workers=n_jobs)
+    futures = []
+
+    print('Loading from disk')
+    tokens = pickle.load(open(src_path, 'rb'))
+    print('Finished')
+    for line in tqdm(tokens):
+            futures.append(executor.submit(partial(get_phones, line)))
+
+    with open(out_path, 'w') as out_file:
+        for res in [
+                future.result() for future in tqdm(futures)
+                if future.result() is not None]:
+            out_file.write('{}\n'.format('\t'.join([res[0].strip()]+res[1][:])))
+
 
 def g2p_file(src_path, out_path, n_jobs=4):
     '''
@@ -53,7 +86,7 @@ def score_file(src_path, out_path, n_jobs=4):
 
     # calculate total diphone coverage
     with open(src_path, 'r') as g2p_file:
-        for line in g2p_file:
+        for line in tqdm(g2p_file):
             token, *phone_strings = line.split('\t')[0:]
             for phone_string in phone_strings:
                 diphones = get_diphones(phone_string)
@@ -64,7 +97,7 @@ def score_file(src_path, out_path, n_jobs=4):
     executor = ProcessPoolExecutor(max_workers=n_jobs)
     futures = []
     with open(src_path, 'r') as g2p_file:
-        for line in g2p_file:
+        for line in tqdm(g2p_file):
             futures.append(executor.submit(partial(get_score, line, corpus_diphones)))
 
     futures = [future.result() for future in tqdm(futures)
@@ -97,6 +130,6 @@ def unique(seq):
    return keys.keys()
 
 if __name__ == '__main__':
-    # g2p_file('./data/tokens/eiki.txt', './data/tokens/eiki_parall.txt')
-    score_file('./data/tokens/eiki_parall.txt', './data/tokens/eiki_parall_scored.txt')
-    #compare_dists('./data/tokens/common_wiki_g2p.txt', './data/tokens/common_wiki_scored.txt')
+    # g2p_pickle('./data/tokens/rmh_150K.txt', './data/tokens/rmh_g2p.txt', n_jobs=30)
+    # g2p_file('./data/tokens/eiki.txt', './data/tokens/eiki_g2p.txt', n_jobs=24)
+    score_file('./data/tokens/rmh_g2p.txt', './data/tokens/rmh_scored.txt', n_jobs=30)

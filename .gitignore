@@ -3,6 +3,7 @@ data/
 checkpoints/
 results/
 log.txt
+pron_data/processed_tokens
 
 # development stuff
 env/

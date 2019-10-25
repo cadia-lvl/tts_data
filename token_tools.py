@@ -217,7 +217,9 @@ def normalize(token:str, lower_all:bool=True):
     return token
 
 
-def split_bad_tokens(src_path:str, out_path:str, bad_path:str):
+def split_bad_tokens(src_path:str, out_path:str, bad_path:str,
+    min_char_length=10, max_char_length=None, min_word_length=3,
+    max_word_length=None):
     '''
     Given a list of tokens, remove all tokens that check
     any of these boxes:
@@ -235,6 +237,8 @@ def split_bad_tokens(src_path:str, out_path:str, bad_path:str):
     will be stored
     * bad_path (str): A target path where tokens that check any
     of the above boxes will be stored.
+    * min_char_length (None/int): The minimum length of tokens
+    * max_char_length (None/int): The maximum length of tokens
     '''
     with open(src_path, 'r') as i_f, open(out_path, 'w') as o_f,\
         open(bad_path, 'w') as b_f:
@@ -242,8 +246,12 @@ def split_bad_tokens(src_path:str, out_path:str, bad_path:str):
             token, src = line.split('\t')
             if any(c.isdigit() for c in token):
                 b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'DIGITS'))
-            elif len(token) < 10 or len(token.split()) < 3:
+            elif (min_char_length and len(token) < min_char_length) or \
+                (min_word_length and len(token) < min_word_length):
                 b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'SHORT'))
+            elif (max_char_length and len(token) > max_char_length) or \
+                (max_word_length and len(token) < max_word_length):
+                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'LONG'))
             elif token.find('.') not in [-1, len(token) - 1]:
                 b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'PUNC'))
             elif any(c in ONLY_ENGLISH for c in token):

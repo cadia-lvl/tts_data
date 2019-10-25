@@ -103,7 +103,5 @@ class PronData:
         plt.show()
 
 if __name__ == '__main__':
-    P = PronData('data/processed_tokens/all_tokens_norm_clean_g2p.txt')
-    print(P.coverage())
-    P.plot_coverage('eiki_coverage.png')
-    P.plot_diphone_heatmap('eiki_diphone_heatmap.png')
+    P = PronData('pron_data/all_tokens_norm_clean_g2p_lc.txt')
+    print(P.missing_diphones())

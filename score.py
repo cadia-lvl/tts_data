@@ -9,7 +9,7 @@ from functools import partial
 from tqdm import tqdm
 from sequitur_tools import get_phones
 
-VALID_DIPHONES_PATH = './data/diphones/complete_ipa.txt'
+VALID_DIPHONES_PATH = './pron_data/diphones/complete_ipa.txt'
 
 phonemes = [
     'a', 'r', 't', 's', 'n', 'ɪ', 'l', 'ʏ', 'k', 'm',

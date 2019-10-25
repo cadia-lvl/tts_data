@@ -185,7 +185,7 @@ def common_normalize(src_path:str, out_path:str):
             token, src = line.split('\t')
             o_f.write('{}\t{}'.format(normalize(token), src))
 
-def normalize(token:str):
+def normalize(token:str, lower_all:bool=True):
     '''
     Normalize a text token. This function will:
     * Remove any symbols not found in the global
@@ -194,16 +194,25 @@ def normalize(token:str):
     characters nor numericals.
     * Lowercase any uppercase characters that do not
     appear at the start of words.
+
+    Input arguments:
+    * token (str): The token to normalize
+    * lower_all (bool=True): If True, all characters are made
+    lowercase, otherwise characters at the start of words are
+    allowed to be uppercase.
     '''
     token = re.sub(toksub_pattern, '', token)
     while len(token) != 0 and token[0] not in CHARS+ICE_CHARS+NUMS:
         token = token[1:]
-    # remove bad uppercase
-    l_token = list(token)
-    for i in range(1, len(l_token)):
-        if l_token[i].isupper() and l_token[i] != ' ':
-            l_token[i] = l_token[i].lower()
-    token = ''.join(l_token)
+    if lower_all:
+        token = token.lower()
+    else:
+        # remove bad uppercase
+        l_token = list(token)
+        for i in range(1, len(l_token)):
+            if l_token[i].isupper() and l_token[i] != ' ':
+                l_token[i] = l_token[i].lower()
+        token = ''.join(l_token)
     token = token.strip()
     return token
 

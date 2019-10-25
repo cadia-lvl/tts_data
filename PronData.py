@@ -31,23 +31,52 @@ class PronData:
                 self.tokens.append(token)
                 self.srcs.append(src)
                 self.prons.append(phone_strings)
+
+                word_diphones = self.sentence_2_diphones(phone_strings)
+                for diphone in word_diphones:
+                    try:
+                        self.diphones["".join(diphone)] += 1
+                        self.diphone_map[diphone[0]][diphone[1]] += 1
+                    except KeyError:
+                        self.bad_diphones[diphone] += 1
+                '''
                 for phone_string in phone_strings:
-                    diphones = self.get_diphones(phone_string)
+                    diphones = self.word_2_diphones(phone_string)
                     for diphone in diphones:
                         try:
                             self.diphones["".join(diphone)] += 1
                             self.diphone_map[diphone[0]][diphone[1]] += 1
                         except KeyError:
                             self.bad_diphones[diphone] += 1
-
-    def get_diphones(self, phone_string: str):
+                '''
+    def word_2_diphones(self, phone_string: str):
         '''
         A string of space seperated phones phonetically
         representing a single word, e.g. for the original word
-        "mig" we get phone_string="m ɪː ɣ"
+        "mig" the phone_string is "m ɪː ɣ". This will then
+        return the list [("m", "ɪː"), ("ɪː", "ɣ")]
+
+        This function will return the empty list if the phone_string
+        includes only a single phone.
+
+        Input arguments:
+        * phone_string (str): An IPA space seperated phone string
+        for a single word.
         '''
         phones = phone_string.split()
         return [(phones[i], phones[i+1]) for i in range(len(phones) - 1)]
+
+    def sentence_2_diphones(self, ph_strings: list):
+        '''
+        This achieves the same as word_2_diphones but on the
+        token level, meaning that between-word-diphones are
+        counted as well.
+
+        Input arguments:
+        * ph_strings: A list of IPA space seperated phone strings,
+        each one corresponding to a single word.
+        '''
+        return self.word_2_diphones(' '.join(ph_strings))
 
     def coverage(self):
         '''
@@ -57,11 +86,37 @@ class PronData:
         return len([k for k, v in self.diphones.items() if v > 0])\
             / len(self.all_diphones)
 
-    def missing_diphones(self):
+    def missing_diphones(self, pd_path=None):
         '''
-        Returns a list of diphones not currently coveraged
+        Returns a list of diphones not currently covered.
+        If pd_path is a path to an IPA pronounciation dictionary
+        this function will return two lists, first is a list of
+        dihpones covered neither in this dataset nor the
+        dictionary and the second is only covered in the dictionary
+
+        Input arguments:
+        * pd_path (None or str): Possibly a path to an IPA
+        pronounciation dictionary
         '''
-        return [k for k, v in self.diphones.items() if v == 0]
+        missing = [k for k, v in self.diphones.items() if v == 0]
+        if pd_path is None:
+            return missing
+        else:
+            pd_dps = defaultdict(bool)
+            with open(pd_path) as i_f:
+                for line in i_f:
+                    _, phones = line.split('\t')
+                    for dp in self.word_2_diphones(phones):
+                        pd_dps["".join(dp)] = True
+
+            pron_cov, non_cov = [], []
+            for m_dp in missing:
+                if pd_dps[m_dp]:
+                    pron_cov.append(m_dp)
+                else:
+                    non_cov.append(m_dp)
+
+            return non_cov, pron_cov
 
     def plot_coverage(self, fname:str='diphone_coverage.png'):
         '''
@@ -101,7 +156,3 @@ class PronData:
         plt.tight_layout()
         plt.savefig(fname)
         plt.show()
-
-if __name__ == '__main__':
-    P = PronData('pron_data/all_tokens_norm_clean_g2p_lc.txt')
-    print(P.missing_diphones())

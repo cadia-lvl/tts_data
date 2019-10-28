@@ -1,6 +1,8 @@
 
 import itertools
+import concurrent.futures
 from collections import defaultdict
+
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -26,7 +28,7 @@ class PronData:
         self.all_phones = all_phones
         self.banned_sources = banned_sources
         # the number of occurrences of all diphones
-        self.diphone_counts = {dp:0 for dp in all_diphones}
+        self.diphone_counts = {dp:0 for dp in self.all_diphones}
         # diphones encountered that are possibly not valid
         self.bad_diphones = defaultdict(int)
         # A phone-by-phone array with number of occurs on the 3rd axis
@@ -80,12 +82,14 @@ class PronData:
         '''
         return self.word_2_diphones(' '.join(ph_strings))
 
-    def coverage(self):
+    def coverage(self, dp_dict=None):
         '''
         Returns the ratio of the number of covered diphones
         to the number of total diphones
         '''
-        return len([k for k, v in self.diphone_counts.items() if v > 0])\
+        if dp_dict is None:
+            dp_dict = self.diphone_counts
+        return len([k for k, v in dp_dict.items() if v > 0])\
             / len(self.all_diphones)
 
     def missing_diphones(self, pd_path=None):
@@ -159,7 +163,7 @@ class PronData:
         plt.savefig(fname)
         plt.show()
 
-    def get_simple_score(self, i:int):
+    def score(self, i:int):
         '''
         Returns s(utt[i]) = 1/len(utt[i]) * sum_j [1/f(di[j])]
         where f(di[j]) is the corpus frequency of the j-th diphone
@@ -176,16 +180,77 @@ class PronData:
         score *= 1/len(self.get_utt(i))
         return score
 
+    def score_list(self, diphones, utt_len):
+        '''
+        Achieves the same as above but on a list of diphones
+        '''
+        score = 0.0
+        for diphone in diphones:
+            score += 1.0/self.diphone_counts[self.dpkey(diphone)]
+        score *= 1/utt_len
+        return score
+
     def simple_score_file(self, out_path='scores.txt'):
         scores = []
         for i in range(len(self)):
-            scores.append([self.get_utt(i), self.get_simple_score(i)])
+            scores.append([self.get_utt(i), self.score(i)])
         scores = sorted(scores, key=lambda r: r[1], reverse=True)
 
         out_file = open(out_path, 'w')
         for res in scores:
             out_file.write('{}\t{}\n'.format(*res))
         out_file.close()
+
+    def greedy_score_file(self, out_path='greedy_scores.txt',
+        covplot_path='coverage_hist.png'):
+
+        import time
+        added, scores, unchanged, covs = [], [], [], []
+        diphone_counts = {dp:0 for dp in self.all_diphones}
+
+        for i in range(len(self)):
+            scores.append({
+                'utt':self.get_utt(i),
+                'src':self.get_src(i),
+                'pron': self.get_pron(i),
+                'dps':self.get_diphones(i),
+                'scr':-1})
+
+        for _ in tqdm(range(len(self))):
+            # calculate the scores
+            t1 =  time.time()
+            for i in range(len(scores)):
+                scores[i]['scr'] = self.score_list(scores[i]['dps'], len(scores[i]['utt']))
+
+            t2 = time.time()
+
+            scores += unchanged
+            unchanged = []
+
+            # sort
+            scores = sorted(scores, key=lambda r: r['scr'], reverse=True)
+            t3 = time.time()
+            # remove the best and add to the list
+            new = scores.pop(0)
+            for dp in new['dps']: diphone_counts[self.dpkey(dp)] += 1
+            added.append(new)
+
+            # remove the newly added diphones from all other elements
+            j = 0
+            while j < len(scores):
+                dps = scores[j]['dps']
+                scores[j]['dps'] = [dp for dp in scores[j]['dps'] if dp not in new['dps']]
+                if scores[j]['dps'] == dps:
+                    unchanged.append(scores.pop(j))
+                j += 1
+            covs.append(self.coverage(diphone_counts))
+
+        plt.plot(covs)
+        plt.show()
+        plt.savefig(covplot_path)
+        with open(out_path, 'w') as o_f:
+            for a in added:
+                o_f.write('{}\t{}\t{}\n'.format(a['utt'], a['src'], a['scr']))
 
     def get_utt(self, i:int):
         return self.tokens[i]
@@ -214,5 +279,5 @@ class PronData:
 
 
 if __name__ == '__main__':
-    p = PronData('./pron_data/no_repeats.txt')
-    print(p.simple_score_file())
+    p = PronData('./pron_data/all_tokens.txt')
+    p.greedy_score_file()

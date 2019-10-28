@@ -216,8 +216,9 @@ def normalize(token:str, lower_all:bool=True):
                 l_token[i] = l_token[i].lower()
         token = ''.join(l_token)
     token = token.strip()
+    # remove redundant spaces
+    token = re.sub(' +', ' ', token)
     return token
-
 
 def split_bad_tokens(src_path:str, out_path:str, bad_path:str,
     min_char_length=10, max_char_length=None, min_word_length=3,
@@ -281,3 +282,20 @@ def remove_repeats(src_path:str, out_path:str):
                 o_f.write(line)
 
     o_f.close()
+
+def preprocess_file(src_path:str, out_path:str, bad_path:str):
+    with open(src_path, 'r') as i_f, open(out_path, 'w') as o_f,\
+        open(bad_path, 'w') as b_f:
+        for line in i_f:
+            token, src = line.split('\t')
+            token = normalize(token)
+            if any(c.isdigit() for c in token):
+                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'DIGITS'))
+            elif len(token) < 10 or len(token.split()) < 3:
+                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'SHORT'))
+            elif token.find('.') not in [-1, len(token) - 1]:
+                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'PUNC'))
+            elif any(c in ONLY_ENGLISH for c in token):
+                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'ENGLISH'))
+            else:
+                o_f.write('{}\t{}\n'.format(token, src.strip()))

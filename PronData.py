@@ -1,15 +1,18 @@
 
-from tqdm import tqdm
+import itertools
 from collections import defaultdict
-import matplotlib.pyplot as plt
+
 import matplotlib
+import matplotlib.pyplot as plt
 import numpy as np
+from tqdm import tqdm
 
 from score import diphones, phonemes
 
+
 class PronData:
     def __init__(self, src_path: str, all_phones=phonemes,
-        all_diphones=diphones):
+        all_diphones=diphones, banned_sources=['gold-blog', 'gold-websites', 'ivona']):
 
         '''
         Input arguments:
@@ -18,37 +21,36 @@ class PronData:
         * all_diphones (list) : A list of all possible diphones where each
         item in the list is a concatenated string of two phonemes.
         '''
-        self.tokens, self.srcs, self.prons = [], [], []
+        self.tokens, self.srcs, self.prons, self.diphones = [], [], [], []
         self.all_diphones = all_diphones
         self.all_phones = all_phones
-        self.diphones = {dp:0 for dp in all_diphones}
+        self.banned_sources = banned_sources
+        # the number of occurrences of all diphones
+        self.diphone_counts = {dp:0 for dp in all_diphones}
+        # diphones encountered that are possibly not valid
         self.bad_diphones = defaultdict(int)
+        # A phone-by-phone array with number of occurs on the 3rd axis
         self.diphone_map = defaultdict(lambda: defaultdict(int))
 
         with open(src_path, 'r') as g2p_file:
             for idx, line in tqdm(enumerate(g2p_file)):
                 token, src, *phone_strings = line.split('\t')[0:]
-                self.tokens.append(token)
-                self.srcs.append(src)
-                self.prons.append(phone_strings)
+                if src not in self.banned_sources:
+                    self.tokens.append(token)
+                    self.srcs.append(src)
+                    self.prons.append(phone_strings)
 
-                word_diphones = self.sentence_2_diphones(phone_strings)
-                for diphone in word_diphones:
-                    try:
-                        self.diphones["".join(diphone)] += 1
-                        self.diphone_map[diphone[0]][diphone[1]] += 1
-                    except KeyError:
-                        self.bad_diphones[diphone] += 1
-                '''
-                for phone_string in phone_strings:
-                    diphones = self.word_2_diphones(phone_string)
+                    diphones = self.sentence_2_diphones(phone_strings)
+                    valid = []
                     for diphone in diphones:
                         try:
-                            self.diphones["".join(diphone)] += 1
+                            self.diphone_counts[self.dpkey(diphone)] += 1
                             self.diphone_map[diphone[0]][diphone[1]] += 1
+                            valid.append(diphone)
                         except KeyError:
                             self.bad_diphones[diphone] += 1
-                '''
+                    self.diphones.append(valid)
+
     def word_2_diphones(self, phone_string: str):
         '''
         A string of space seperated phones phonetically
@@ -83,7 +85,7 @@ class PronData:
         Returns the ratio of the number of covered diphones
         to the number of total diphones
         '''
-        return len([k for k, v in self.diphones.items() if v > 0])\
+        return len([k for k, v in self.diphone_counts.items() if v > 0])\
             / len(self.all_diphones)
 
     def missing_diphones(self, pd_path=None):
@@ -98,7 +100,7 @@ class PronData:
         * pd_path (None or str): Possibly a path to an IPA
         pronounciation dictionary
         '''
-        missing = [k for k, v in self.diphones.items() if v == 0]
+        missing = [k for k, v in self.diphone_counts.items() if v == 0]
         if pd_path is None:
             return missing
         else:
@@ -127,8 +129,8 @@ class PronData:
         Input arguments:
         * fname (str): The name of the file to store the plot
         '''
-        plt.bar(range(len(self.diphones)),
-            sorted(list(self.diphones.values()), reverse=True), align='center')
+        plt.bar(range(len(self.diphone_counts)),
+            sorted(list(self.diphone_counts.values()), reverse=True), align='center')
         plt.savefig(fname)
         plt.show()
 
@@ -156,3 +158,61 @@ class PronData:
         plt.tight_layout()
         plt.savefig(fname)
         plt.show()
+
+    def get_simple_score(self, i:int):
+        '''
+        Returns s(utt[i]) = 1/len(utt[i]) * sum_j [1/f(di[j])]
+        where f(di[j]) is the corpus frequency of the j-th diphone
+        in utt[i]
+
+        Input arguments:
+        * i (int): The index of the utterance to score
+        '''
+        diphones = self.get_diphones(i)
+
+        score = 0.0
+        for diphone in diphones:
+            score += 1.0/self.diphone_counts[self.dpkey(diphone)]
+        score *= 1/len(self.get_utt(i))
+        return score
+
+    def simple_score_file(self, out_path='scores.txt'):
+        scores = []
+        for i in range(len(self)):
+            scores.append([self.get_utt(i), self.get_simple_score(i)])
+        scores = sorted(scores, key=lambda r: r[1], reverse=True)
+
+        out_file = open(out_path, 'w')
+        for res in scores:
+            out_file.write('{}\t{}\n'.format(*res))
+        out_file.close()
+
+    def get_utt(self, i:int):
+        return self.tokens[i]
+
+    def get_src(self, i:int):
+        return self.srcs[i]
+
+    def get_pron(self, i:int):
+        return self.prons[i]
+
+    def get_diphones(self, i:int):
+        return self.diphones[i]
+
+    def dpkey(self, diphone):
+        '''
+        The standard dictionary key of a diphone is the
+        sequential concatenation of the two phones.
+
+        Input arguments:
+        * diphone (iterable): contains the two phones.
+        '''
+        return  "".join(diphone)
+
+    def __len__(self):
+        return len(self.tokens)
+
+
+if __name__ == '__main__':
+    p = PronData('./pron_data/no_repeats.txt')
+    print(p.simple_score_file())

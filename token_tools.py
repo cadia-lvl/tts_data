@@ -1,6 +1,8 @@
 import os
 import re
 import string
+from collections import defaultdict
+
 from tqdm import tqdm
 import sqlite3
 from pathlib import Path
@@ -258,3 +260,24 @@ def split_bad_tokens(src_path:str, out_path:str, bad_path:str,
                 b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'ENGLISH'))
             else:
                 o_f.write('{}\t{}\n'.format(token, src.strip()))
+
+def remove_repeats(src_path:str, out_path:str):
+    '''
+    Removes all repeats of tokens from a file
+
+    Input arguments:
+    * src_path (str): A path to the file containing a list of
+    tokens
+    * out_path (str): A target path where the filtered output
+    will be stored
+    '''
+    tokens = defaultdict(int)
+    o_f = open(out_path, 'w')
+
+    with open(src_path) as i_f:
+        for line in i_f:
+            tokens[line.split('\t')[0]] += 1
+            if tokens[line.split('\t')[0]] == 1:
+                o_f.write(line)
+
+    o_f.close()

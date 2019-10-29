@@ -1,6 +1,7 @@
 import os
 import re
 import string
+import requests
 from collections import defaultdict
 
 from tqdm import tqdm
@@ -15,6 +16,8 @@ ICE_CHARS = 'áéíóúýæöþð'
 ICE_CHARS += ICE_CHARS.upper()
 ONLY_ENGLISH = 'cqw'
 ONLY_ENGLISH += ONLY_ENGLISH.upper()
+
+BIN_API_ROOT = 'https://bin.arnastofnun.is/api/'
 
 start_pattern = re.compile('[^a-zA-Z0-9{}]'.format(ICE_CHARS))
 toksub_pattern = re.compile(r'[^a-zA-Z0-9{}\s,/()„“‘:;&?!\"(.“)]'.format(ICE_CHARS))
@@ -222,7 +225,7 @@ def normalize(token:str, lower_all:bool=True):
 
 def split_bad_tokens(src_path:str, out_path:str, bad_path:str,
     min_char_length=10, max_char_length=None, min_word_length=3,
-    max_word_length=None):
+    max_word_length=None, check_bin:bool=True):
     '''
     Given a list of tokens, remove all tokens that check
     any of these boxes:
@@ -242,23 +245,38 @@ def split_bad_tokens(src_path:str, out_path:str, bad_path:str,
     of the above boxes will be stored.
     * min_char_length (None/int): The minimum length of tokens
     * max_char_length (None/int): The maximum length of tokens
+    * check_bin (bool=True): If True, each word in each utterance
+    is searced for in BIN and denied if not found.
     '''
     with open(src_path, 'r') as i_f, open(out_path, 'w') as o_f,\
         open(bad_path, 'w') as b_f:
         for line in i_f:
-            token, src = line.split('\t')
+            token, src, *crap = line.split('\t')[0:]
+
             if any(c.isdigit() for c in token):
                 b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'DIGITS'))
+
             elif (min_char_length and len(token) < min_char_length) or \
-                (min_word_length and len(token) < min_word_length):
+                (min_word_length and len(token.split()) < min_word_length):
                 b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'SHORT'))
+
             elif (max_char_length and len(token) > max_char_length) or \
-                (max_word_length and len(token) < max_word_length):
+                (max_word_length and len(token.split()) > max_word_length):
                 b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'LONG'))
+
             elif token.find('.') not in [-1, len(token) - 1]:
                 b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'PUNC'))
+
             elif any(c in ONLY_ENGLISH for c in token):
                 b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'ENGLISH'))
+
+            elif check_bin:
+                for word in token.split():
+                    if not isinstance(requests.get(f"{BIN_API_ROOT}ord/{word}").json(), list) and\
+                        not isinstance(requests.get(f"{BIN_API_ROOT}beygingarmynd/{word}").json(), list):
+
+                        b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), f'BIN-{word}'))
+                        break
             else:
                 o_f.write('{}\t{}\n'.format(token, src.strip()))
 
@@ -297,5 +315,7 @@ def preprocess_file(src_path:str, out_path:str, bad_path:str):
                 b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'PUNC'))
             elif any(c in ONLY_ENGLISH for c in token):
                 b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'ENGLISH'))
+
+
             else:
                 o_f.write('{}\t{}\n'.format(token, src.strip()))

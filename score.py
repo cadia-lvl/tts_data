@@ -27,12 +27,6 @@ with open(VALID_DIPHONES_PATH) as i_f:
         diphones.append("".join([p1, p2.strip()]))
         list_diphones.append((p1, p2))
 
-sentemes = [
-    '<sp>', # A space between two words
-    '<S>', # The start of a sentence
-    '<E>' # The end of a sentence
-]
-
 def get_diphones(phone_string: str):
     '''
     A string of space seperated phones phonetically

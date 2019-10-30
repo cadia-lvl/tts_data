@@ -49,16 +49,3 @@ def bin_verify(bin_path:str, in_path:str, out_path:str, bad_path:str):
                     break
             if valid:
                 o_f.write(line)
-
-def sortb(bin_path:str, out_path):
-    '''
-    '''
-    words = []
-    with open(bin_path) as i_f:
-        for line in tqdm(i_f, total=6309315):
-            words.append(line.strip())
-
-    words = sorted(words)
-    with open(out_path, 'w') as o_f:
-        for w in words:
-            o_f.write(f'{w}\n')

@@ -10,7 +10,7 @@ from tqdm import tqdm
 
 from g2p import SequiturTool, Translator, loadG2PSample
 
-SEQUITUR_MDL_PATH = 'data/other/ipd_clean_slt2018.mdl'
+SEQUITUR_MDL_PATH = 'pron_data/ipd_clean_slt2018.mdl'
 OTHER_CHARS = 'abdefghijklmnoprstuvxyz'
 ICE_CHARS = 'áéíóúýæöþð'
 ALL_CHARS = OTHER_CHARS + ICE_CHARS

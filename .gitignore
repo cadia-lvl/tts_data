@@ -10,3 +10,9 @@ env/
 __pycache__/
 .mypy_cache/
 .vscode/
+
+# Terra stuff
+*.out
+.sh
+production_results/
+final_results/

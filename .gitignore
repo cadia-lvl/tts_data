@@ -4,6 +4,7 @@ checkpoints/
 results/
 log.txt
 pron_data/processed_tokens
+*.png
 
 # development stuff
 env/

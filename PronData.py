@@ -1,57 +1,148 @@
 
 import itertools
 import concurrent.futures
+from concurrent.futures import ProcessPoolExecutor
 from collections import defaultdict
-
+from functools import partial, partialmethod
 
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
+import pickle
+
 from tqdm import tqdm
 
-from score import diphones, phonemes
+from score import diphones, phonemes, sil_diphones, sil_phonemes, sil_phone
 
 
 class PronData:
-    def __init__(self, src_path: str, all_phones=phonemes,
-        all_diphones=diphones, banned_sources=['gold-blog', 'gold-websites', 'ivona']):
-
+    def __init__(self, src_path: str, needed_dps=[], all_phones=sil_phonemes,
+        all_diphones=sil_diphones, contains_scores=False, num_needed=20):
         '''
+        A class for many different kinds of operations on the data schemas
+        used in this work.
+
         Input arguments:
         * src_path (str): A path to a G2P output file where each line
         contains a token and a pronounciation
+        * all_phones (list): A list of all phones.
         * all_diphones (list) : A list of all possible diphones where each
         item in the list is a concatenated string of two phonemes.
+        * contains_scores (bool): If True, each line in the input file
+        is e.g. <sentence>\t<source_id>\t<score> else it is
+        <sentence>\t<source_id>
+        * num_needed (int): This is relevant when finding dihpones missing in
+        other PronData sets. It is important only to self.export_needed_from_ids()
+        and self.collect_needed_diphones()
         '''
-        self.tokens, self.srcs, self.prons, self.diphones = [], [], [], []
+        self.contains_scores = contains_scores
+        self.tokens, self.srcs, self.scrs, self.prons, self.diphones,
+            self.lines = [], [], [], [], [], []
         self.all_diphones = all_diphones
         self.all_phones = all_phones
-        self.banned_sources = banned_sources
         # the number of occurrences of all diphones
+        self.phone_counts = {p:0 for p in self.all_phones}
         self.diphone_counts = {dp:0 for dp in self.all_diphones}
         # diphones encountered that are possibly not valid
         self.bad_diphones = defaultdict(int)
         # A phone-by-phone array with number of occurs on the 3rd axis
         self.diphone_map = defaultdict(lambda: defaultdict(int))
+        self.num_nonzero =  0
+
+        self.needed_ids = []
 
         with open(src_path, 'r') as g2p_file:
             for idx, line in tqdm(enumerate(g2p_file)):
-                token, src, *phone_strings = line.split('\t')[0:]
-                if src not in self.banned_sources:
-                    self.tokens.append(token)
-                    self.srcs.append(src)
-                    self.prons.append(phone_strings)
+                self.lines.append(line)
+                if contains_scores:
+                    token, src, scr, *phone_strings = line.split('\t')[0:]
+                    self.scrs.append(scr)
+                else:
+                    token, src, *phone_strings = line.split('\t')[0:]
+                self.tokens.append(token)
+                self.srcs.append(src)
+                self.prons.append(phone_strings)
+                phones = self.sentence_2_phones(phone_strings)
+                for p in phones:
+                    self.phone_counts[p] += 1
+                diphones = self.sentence_2_diphones(phone_strings)
+                valid = []
+                utt_added = False
+                for diphone in diphones:
+                    try:
+                        self.diphone_counts[self.dpkey(diphone)] += 1
+                        self.diphone_map[diphone[0]][diphone[1]] += 1
+                        valid.append(diphone)
+                        if self.dpkey(diphone) in needed_dps:
+                            needed_dps[self.dpkey(diphone)] += 1
+                            if needed_dps[self.dpkey(diphone)] >= num_needed:
+                                needed_dps.pop(self.dpkey(diphone))
+                            # append this utt only once !
+                            if not utt_added:
+                                self.needed_ids.append(len(self.diphones))
+                                utt_added = True
+                    except KeyError:
+                        self.bad_diphones[diphone] += 1
+                self.diphones.append(valid)
+        self.num_nonzero = sum([1 for key,val in self.diphone_counts.items() if val > 0])
 
-                    diphones = self.sentence_2_diphones(phone_strings)
-                    valid = []
-                    for diphone in diphones:
-                        try:
-                            self.diphone_counts[self.dpkey(diphone)] += 1
-                            self.diphone_map[diphone[0]][diphone[1]] += 1
-                            valid.append(diphone)
-                        except KeyError:
-                            self.bad_diphones[diphone] += 1
-                    self.diphones.append(valid)
+    def __len__(self):
+        '''
+        Returns the number of samples in this set
+        '''
+        return len(self.tokens)
+
+    def get_utt(self, i:int):
+        '''
+        Returns the i-th utterance
+        '''
+        return self.tokens[i]
+
+    def get_src(self, i:int):
+        '''
+        Returns the i-th source id
+        '''
+        return self.srcs[i]
+
+    def get_pron(self, i:int):
+        '''
+        Returns the i-th phonetic prediction
+        '''
+        return self.prons[i]
+
+    def get_diphones(self, i:int):
+        '''
+        Returns the diphones for the i-th utterance
+        '''
+        return self.diphones[i]
+
+    def get_line(self, i:int):
+        '''
+        Returns the complete i-th line from the input file
+        '''
+        return self.lines[i]
+
+    def get_phone_counts(self):
+        '''
+        Returns the number of each phone in this set
+        '''
+        return self.phone_counts
+
+    def get_sources(self):
+        '''
+        Returns a list of unique sources in this collection
+        '''
+        return list(set(self.srcs))
+
+    def dpkey(self, diphone):
+        '''
+        The standard dictionary key of a diphone is the
+        concatenation of the two phones.
+
+        Input arguments:
+        * diphone (iterable): contains the two phones.
+        '''
+        return  "".join(diphone)
 
     def word_2_diphones(self, phone_string: str):
         '''
@@ -82,15 +173,40 @@ class PronData:
         '''
         return self.word_2_diphones(' '.join(ph_strings))
 
-    def coverage(self, dp_dict=None):
+    def word_2_phones(self, phone_string: str):
+        '''
+        Returns the individual phones in a space seperated string
+        of phones
+        '''
+        return phone_string.split()
+
+    def sentence_2_phones(self, ph_strings: list):
+        '''
+        Given a list of phone strings, this will return the complete
+        phonetic prediction as a single string.
+        '''
+        return self.word_2_phones(' '.join(ph_strings))
+
+    def coverage(self, dp_dict=None, n_needed=1):
         '''
         Returns the ratio of the number of covered diphones
         to the number of total diphones
+
+        Input arguments:
+        * dp_dict (dict or None): A dictionary where each key
+        is a dihpone and each value is the number of occurrences.
+        If dp_dict is none, self.dihpone_counts is usd
+        * n_needed (int=1): A user chosen value, determining how
+        many occurrences of each diphone is needed to fullfill 100%
+        coverage.
         '''
         if dp_dict is None:
             dp_dict = self.diphone_counts
-        return len([k for k, v in dp_dict.items() if v > 0])\
-            / len(self.all_diphones)
+
+        total = 0.0
+        for dp in self.all_diphones:
+            total += min(dp_dict[dp],n_needed)/n_needed
+        return total/len(self.all_diphones)
 
     def missing_diphones(self, pd_path=None):
         '''
@@ -133,8 +249,10 @@ class PronData:
         Input arguments:
         * fname (str): The name of the file to store the plot
         '''
+        plt.clf()
         plt.bar(range(len(self.diphone_counts)),
-            sorted(list(self.diphone_counts.values()), reverse=True), align='center')
+            sorted(list(self.diphone_counts.values()), reverse=True),
+            align='center')
         plt.savefig(fname)
         plt.show()
 
@@ -147,10 +265,12 @@ class PronData:
         Input arguments:
         * fname (str): The name of the file to store the plot
         '''
+        plt.clf()
         m = np.zeros([len(self.all_phones), len(self.all_phones)])
         for p, other_p in self.diphone_map.items():
             for pp, num in other_p.items():
-                m[self.all_phones.index(p), self.all_phones.index(pp)] = num
+                m[self.all_phones.index(p),
+                    self.all_phones.index(pp)] = num
         fig, ax = plt.subplots(figsize=(60, 60))
         im = ax.imshow(m)
         ax.tick_params(axis='both', which='major', labelsize=80)
@@ -163,121 +283,70 @@ class PronData:
         plt.savefig(fname)
         plt.show()
 
-    def score(self, i:int):
+    def collect_needed_diphones(self, dps, out_file:str, num_needed=20):
         '''
-        Returns s(utt[i]) = 1/len(utt[i]) * sum_j [1/f(di[j])]
-        where f(di[j]) is the corpus frequency of the j-th diphone
-        in utt[i]
-
-        Input arguments:
-        * i (int): The index of the utterance to score
+        Given a list of diphone ids, search the diphones in this set for
+        utterances that contain some of the needed dihpones.
         '''
-        diphones = self.get_diphones(i)
+        o_f = open(out_file, 'w')
 
-        score = 0.0
-        for diphone in diphones:
-            score += 1.0/self.diphone_counts[self.dpkey(diphone)]
-        score *= 1/len(self.get_utt(i))
-        return score
+        for dp, num in tqdm(dps.items()):
+            # first check if dp exists in this set
+            if self.diphone_counts[dp] != 0:
 
-    def score_list(self, diphones, utt_len):
+                # needed is the min of the number we actually want
+                # and what is actually available.
+                needed = min(num_needed - num, self.diphone_counts[dp])
+                # then search
+                for i in self.needed_ids:
+                    if dp in [self.dpkey(d) for d in self.get_diphones(i)]:
+                        # we found one
+                        pron = "\t".join(self.get_pron(i))
+                        o_f.write(self.get_line(i))
+                        needed -= 1
+                        if needed == 0: break
+
+    def export_needed_from_ids(self, out_file):
+        o_f = open(out_file, 'w')
+        for i in self.needed_ids:
+            pron = "\t".join(self.get_pron(i))
+            o_f.write(f'{self.get_utt(i)}\t{self.get_src(i)}\t{pron}')
+
+    def greedy_coverage(self, dps):
         '''
-        Achieves the same as above but on a list of diphones
+        Measure greedy coverage by counting the number of
+        diphones in dps that occur at least once that also
+        occur n self.diphone_counts.
+
+        The coverage of each diphone is equal to
+        count_bag / min(5, count_set) where count_bag is the
+        number of this diphone in the added set and
+        count_set is the number of  this diphone in the total
+        corpus.
         '''
-        score = 0.0
-        for diphone in diphones:
-            score += 1.0/self.diphone_counts[self.dpkey(diphone)]
-        score *= 1/utt_len
-        return score
 
-    def simple_score_file(self, out_path='scores.txt'):
-        scores = []
-        for i in range(len(self)):
-            scores.append([self.get_utt(i), self.score(i)])
-        scores = sorted(scores, key=lambda r: r[1], reverse=True)
+        total_count = 0
+        for dp, count in dps.items():
+            if count != 0:
+                num_occurs = self.diphone_counts[dp]
+                if num_occurs > 0:
+                    total_count += min(5, count) / min(5, num_occurs)
+        return total_count / self.num_nonzero
 
-        out_file = open(out_path, 'w')
-        for res in scores:
-            out_file.write('{}\t{}\n'.format(*res))
-        out_file.close()
+    def diphones_to_file(self, out_path:str):
+        '''
+        Export the diphone frequency dictionary to a
+        file, sorted by frequency descending
+        '''
+        import operator
 
-    def greedy_score_file(self, out_path='greedy_scores.txt',
-        covplot_path='coverage_hist.png'):
-
-        import time
-        added, scores, unchanged, covs = [], [], [], []
-        diphone_counts = {dp:0 for dp in self.all_diphones}
-
-        for i in range(len(self)):
-            scores.append({
-                'utt':self.get_utt(i),
-                'src':self.get_src(i),
-                'pron': self.get_pron(i),
-                'dps':self.get_diphones(i),
-                'scr':-1})
-
-        for _ in tqdm(range(len(self))):
-            # calculate the scores
-            t1 =  time.time()
-            for i in range(len(scores)):
-                scores[i]['scr'] = self.score_list(scores[i]['dps'], len(scores[i]['utt']))
-
-            t2 = time.time()
-
-            scores += unchanged
-            unchanged = []
-
-            # sort
-            scores = sorted(scores, key=lambda r: r['scr'], reverse=True)
-            t3 = time.time()
-            # remove the best and add to the list
-            new = scores.pop(0)
-            for dp in new['dps']: diphone_counts[self.dpkey(dp)] += 1
-            added.append(new)
-
-            # remove the newly added diphones from all other elements
-            j = 0
-            while j < len(scores):
-                dps = scores[j]['dps']
-                scores[j]['dps'] = [dp for dp in scores[j]['dps'] if dp not in new['dps']]
-                if scores[j]['dps'] == dps:
-                    unchanged.append(scores.pop(j))
-                j += 1
-            covs.append(self.coverage(diphone_counts))
-
-        plt.plot(covs)
-        plt.show()
-        plt.savefig(covplot_path)
         with open(out_path, 'w') as o_f:
-            for a in added:
-                o_f.write('{}\t{}\t{}\n'.format(a['utt'], a['src'], a['scr']))
+            diphones = sorted(self.diphone_counts.items(),
+                key=operator.itemgetter(1), reverse=True)
+            for d in diphones:
+                o_f.write(f'{d[0]}\t{d[1]}\n')
 
-    def get_utt(self, i:int):
-        return self.tokens[i]
-
-    def get_src(self, i:int):
-        return self.srcs[i]
-
-    def get_pron(self, i:int):
-        return self.prons[i]
-
-    def get_diphones(self, i:int):
-        return self.diphones[i]
-
-    def dpkey(self, diphone):
-        '''
-        The standard dictionary key of a diphone is the
-        sequential concatenation of the two phones.
-
-        Input arguments:
-        * diphone (iterable): contains the two phones.
-        '''
-        return  "".join(diphone)
-
-    def __len__(self):
-        return len(self.tokens)
-
-
-if __name__ == '__main__':
-    p = PronData('./pron_data/all_tokens.txt')
-    p.greedy_score_file()
+    def export_needed_diphones(self, out_path:str, threshold=5):
+        needed = {k:v for k,v in self.diphone_counts.items() if v < threshold}
+        with open(out_path, 'wb') as handle:
+            pickle.dump(needed, handle, protocol=pickle.HIGHEST_PROTOCOL)

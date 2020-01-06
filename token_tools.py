@@ -1,23 +1,17 @@
 import os
 import re
-import string
 from collections import defaultdict
+from concurrent.futures import ProcessPoolExecutor
+from functools import partial
 
 from tqdm import tqdm
 import sqlite3
 from pathlib import Path
 
-from sequitur_tools import get_phones
+from misc.xml_tools import parse
+from bin_tools import BinVerifer
 
-NUMS = '0123456789'
-CHARS = string.ascii_letters
-ICE_CHARS = 'áéíóúýæöþð'
-ICE_CHARS += ICE_CHARS.upper()
-ONLY_ENGLISH = 'cqw'
-ONLY_ENGLISH += ONLY_ENGLISH.upper()
-
-start_pattern = re.compile('[^a-zA-Z0-9{}]'.format(ICE_CHARS))
-toksub_pattern = re.compile(r'[^a-zA-Z0-9{}\s,/()„“‘:;&?!\"(.“)]'.format(ICE_CHARS))
+from conf import ICE_ALPHABET, OTHER_CHARS
 
 def gs_to_files(src_dir:str, out_dir:str):
     '''
@@ -49,7 +43,7 @@ def gs_to_files(src_dir:str, out_dir:str):
                         token, idx = '', 0
                     else:
                         w, _ = line.split('\t')
-                        if w in ['.', ',', '?', '!', ':'] or idx == 0:
+                        if w in OTHER_CHARS or idx == 0:
                             token += w
                         else:
                             token += ' {}'.format(w)
@@ -139,6 +133,58 @@ def malromur_to_file(db_path:str, out_path:str,
             conn.close()
             print("The SQLite connection is closed")
 
+def rmh_to_file(src_path:str, out_path:str):
+    '''
+    Input arguments:
+    * src_path (str): The file containing
+    the Risamalheild dataset excerpt
+    * out_path (str): The target path to store the
+    formatted data
+    '''
+    with open(src_path) as i_f, open(out_path, 'w') as o_f:
+        for line in tqdm(i_f):
+            txt_id, txt = line.split('\t')
+            o_f.write(f'{txt.strip()}\trmh-{txt_id}\n')
+
+def rmh_parser(src_dir:str, out_dir:str):
+    '''
+    All .xml files under src_dir/src/<year>/<month> will
+    be written to out_dir/src-<year>-<month>.txt
+
+    No specific preprocessing is done here, except that sentences
+    that contain '.' punctuation anywhere except for at the end
+    of a sentence, are removed.
+
+    Input arguments:
+    * src_dir (str): The directory of the RMH data
+    * out_dir (str): The target directory to write out
+    the new RMH parsed data.
+    '''
+    sentences = defaultdict(list)
+
+    executor = ProcessPoolExecutor()
+    futures = []
+
+    f_count = 0
+    for _ in os.walk(src_dir): f_count += 1
+
+    for dirName, subdirList, fileList in tqdm(os.walk(src_dir), total=f_count):
+        for fname in fileList:
+            try:
+                source = Path(dirName).parent.parent.name
+                sentences[source] += parse(os.path.join(dirName, fname))
+                futures.append(
+                    [source,
+                    executor.submit(partial(parse, os.path.join(dirName, fname)))])
+            except Exception as e:
+                print(e, os.path.join(dirName, fname))
+                continue
+    for (src, text) in [(future[0],future[1].result()) for future in tqdm(futures)]:
+        sentences[src] += text
+    for source, sents in sentences.items():
+        with open(f'{os.path.join(out_dir, source)}.txt', 'w') as o_f:
+            for sent in sents:
+                o_f.write(f'{sent}\t{source}\n')
 
 def tokens_to_file(src_dir:str, out_path:str):
     '''
@@ -169,133 +215,74 @@ def tokens_to_file(src_dir:str, out_path:str):
                 # Handle single files
                 with open(tok_path, 'r') as i_f:
                     for line in i_f:
-                        o_f.write('{}\t{}\n'.format(line.strip(), Path(path).stem))
+                        o_f.write('{}\t{}\n'.format(
+                            line.strip(), Path(path).stem))
 
-
-def common_normalize(src_path:str, out_path:str):
+def preprocess(src_path:str, out_path:str, bad_path:str,
+    bin_ver=BinVerifer(), min_char_length:int=10, max_char_length:int=None,
+    min_word_length:int=5, max_word_length:int=15, contains_pron:bool=False):
     '''
-    Apply the normalize function to each token in a
-    list of tokens
+    Given a path to a file where each line is either
+    <sentence>\t<source_id>\t<transcription>
+    or
+    <sentence>\t<source_id>
+    this function will perform a preprocessing step and output
+    the same lines into two files at out_path if they pass
+    the preprocessing step or bad_path if not.
 
     Input arguments:
-    * src_path (str): The path to the list of tokens
-    * out_path (str): The target path where the normalized
-    output will be stored.
+    * src_path (str): The path to the source file containing
+    lines to be preprocessed
+    * out_path (str): The path to the file where lines that
+    pass the preprocessing step should be stored
+    * bad_path (str): The path to the file where lines that
+    do not pass the preprocessing step should be stored
+    * bin_ver (bin_tools.BinVerifier = BinVerifier()): An
+    instance of the BinVerifier class.
+    * min_char_length (int or None = 10): The minimum number
+    of characters a sentence needs to contain to pass.
+    * max_char_length (int or None = None): The maximum
+    number of characters a sentence can contain to pass.
+    * min_word_length (int or None = 5): The minimum number
+    of words a sentence needs to contain to pass.
+    * max_word_length (int or None = 15): The maximum number
+    of words a sentence can contain to pass.
+    * contains_pron (bool = False): Is True if each line
+    contains a transcription
     '''
-    with open(src_path, 'r') as i_f, open(out_path, 'w') as o_f:
-        for line in i_f:
-            token, src = line.split('\t')
-            o_f.write('{}\t{}'.format(normalize(token), src))
-
-def normalize(token:str, lower_all:bool=True):
-    '''
-    Normalize a text token. This function will:
-    * Remove any symbols not found in the global
-    toksub_pattern regex pattern
-    * Remove any leading symbols that are neither
-    characters nor numericals.
-    * Lowercase any uppercase characters that do not
-    appear at the start of words.
-
-    Input arguments:
-    * token (str): The token to normalize
-    * lower_all (bool=True): If True, all characters are made
-    lowercase, otherwise characters at the start of words are
-    allowed to be uppercase.
-    '''
-    token = re.sub(toksub_pattern, '', token)
-    while len(token) != 0 and token[0] not in CHARS+ICE_CHARS+NUMS:
-        token = token[1:]
-    if lower_all:
-        token = token.lower()
-    else:
-        # remove bad uppercase
-        l_token = list(token)
-        for i in range(1, len(l_token)):
-            if l_token[i].isupper() and l_token[i] != ' ':
-                l_token[i] = l_token[i].lower()
-        token = ''.join(l_token)
-    token = token.strip()
-    # remove redundant spaces
-    token = re.sub(' +', ' ', token)
-    return token
-
-def split_bad_tokens(src_path:str, out_path:str, bad_path:str,
-    min_char_length=10, max_char_length=None, min_word_length=3,
-    max_word_length=None):
-    '''
-    Given a list of tokens, remove all tokens that check
-    any of these boxes:
-        * contains numericals
-        * shorter than 10 characters
-        * shorter than 3 words
-        * with "." somewhere else than at the end of the token
-        * containing non-icelandic characters from the
-        english alphabet
-
-    Input arguments:
-    * src_path (str): A path to the file containing a list of
-    tokens
-    * out_path (str): A target path where the filtered output
-    will be stored
-    * bad_path (str): A target path where tokens that check any
-    of the above boxes will be stored.
-    * min_char_length (None/int): The minimum length of tokens
-    * max_char_length (None/int): The maximum length of tokens
-    '''
+    deny_pattern = re.compile(r'[^{}{}{}]'.format(
+        ICE_ALPHABET, ICE_ALPHABET.upper(), OTHER_CHARS)).search
+    num_lines = len(open(src_path).readlines())
     with open(src_path, 'r') as i_f, open(out_path, 'w') as o_f,\
         open(bad_path, 'w') as b_f:
-        for line in i_f:
-            token, src = line.split('\t')
-            if any(c.isdigit() for c in token):
-                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'DIGITS'))
-            elif (min_char_length and len(token) < min_char_length) or \
-                (min_word_length and len(token) < min_word_length):
-                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'SHORT'))
+        for line in tqdm(i_f, total=num_lines):
+            if contains_pron:
+                token, src, *pron = line.split('\t')
+            else:
+                token, src = line.split('\t')
+                src = src.strip()
+            # check if too short
+            if (min_char_length and len(token) < min_char_length) or \
+                (min_word_length and len(token.split()) < min_word_length):
+                b_f.write('{}\t{}\t{}\n'.format(token, src, 'SHORT'))
+            # check if too long
             elif (max_char_length and len(token) > max_char_length) or \
-                (max_word_length and len(token) < max_word_length):
-                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'LONG'))
+                (max_word_length and len(token.split()) > max_word_length):
+                b_f.write('{}\t{}\t{}\n'.format(token, src, 'LONG'))
+            # check if starts with a capital letter
+            elif token[0] not in ICE_ALPHABET.upper():
+                b_f.write('{}\t{}\t{}\n'.format(token, src, 'CAPITAL'))
+            # check if any character not in deny_pattern
+            elif bool(deny_pattern(token)):
+                b_f.write('{}\t{}\t{}\n'.format(token, src, 'ILLEGAL'))
+            # check if "." is anywhere in sentence except at the end
             elif token.find('.') not in [-1, len(token) - 1]:
-                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'PUNC'))
-            elif any(c in ONLY_ENGLISH for c in token):
-                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'ENGLISH'))
+                b_f.write('{}\t{}\t{}\n'.format(token, src, 'PUNC'))
+            # check if it contains either „ or “ without the other
+            elif ('„' in token and not '“' in token) or ('„' not in token and '“' in token):
+                b_f.write('{}\t{}\t{}\n'.format(token, src, 'GOOSE'))
+            # lastly check if in BIN
+            elif not bin_ver.check_utt(token):
+                b_f.write('{}\t{}\t{}\n'.format(token, src, 'BIN'))
             else:
-                o_f.write('{}\t{}\n'.format(token, src.strip()))
-
-def remove_repeats(src_path:str, out_path:str):
-    '''
-    Removes all repeats of tokens from a file
-
-    Input arguments:
-    * src_path (str): A path to the file containing a list of
-    tokens
-    * out_path (str): A target path where the filtered output
-    will be stored
-    '''
-    tokens = defaultdict(int)
-    o_f = open(out_path, 'w')
-
-    with open(src_path) as i_f:
-        for line in i_f:
-            tokens[line.split('\t')[0]] += 1
-            if tokens[line.split('\t')[0]] == 1:
                 o_f.write(line)
-
-    o_f.close()
-
-def preprocess_file(src_path:str, out_path:str, bad_path:str):
-    with open(src_path, 'r') as i_f, open(out_path, 'w') as o_f,\
-        open(bad_path, 'w') as b_f:
-        for line in i_f:
-            token, src = line.split('\t')
-            token = normalize(token)
-            if any(c.isdigit() for c in token):
-                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'DIGITS'))
-            elif len(token) < 10 or len(token.split()) < 3:
-                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'SHORT'))
-            elif token.find('.') not in [-1, len(token) - 1]:
-                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'PUNC'))
-            elif any(c in ONLY_ENGLISH for c in token):
-                b_f.write('{}\t{}\t{}\n'.format(token, src.strip(), 'ENGLISH'))
-            else:
-                o_f.write('{}\t{}\n'.format(token, src.strip()))

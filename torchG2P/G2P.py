@@ -1,4 +1,4 @@
-# Copyright Atli Thor Sigurgeirsson <atlithors@ru.is>
+# Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.

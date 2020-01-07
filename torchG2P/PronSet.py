@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,13 +14,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import re
 import random
+import re
 
 import torch
-from torch.utils.data import DataLoader, Dataset
 from torch.nn.utils.rnn import pad_sequence
-
+from torch.utils.data import DataLoader, Dataset
 
 # TODO: MAKE THIS MORE ROBUST, this was initially created
 # using a torch text vocabulary.
@@ -122,7 +123,6 @@ class PronSet(Dataset):
     def grapheme_to_tensor(self, grapheme):
         grapheme = [self.grapheme2idx[g] for g in grapheme]
         return torch.Tensor(grapheme).to(dtype=torch.long)
-
 
     def get_phoneme(self, i: int):
         '''

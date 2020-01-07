@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,17 +14,17 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import os
 import argparse
+import os
 
 import torch
 import torch.nn as nn
 
-
-from train import load_model, load_data
 from G2P import G2P
+from train import load_data, load_model
 
-def predict(model, word:str, ds, device=torch.device('cpu')):
+
+def predict(model, word: str, ds, device=torch.device('cpu')):
     # TODO remove the PronSet dependency
     '''
     Input arguments:
@@ -36,10 +38,15 @@ def predict(model, word:str, ds, device=torch.device('cpu')):
     phoneme = ds.idxs_to_phonemes(output)
     print(phoneme)
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('pron_path', default='./data/prondict_ice.txt', nargs='?')
-    parser.add_argument('words', default=['adolfsdóttir', 'skynsemi', 'uppvaxtarskilyrði'], nargs='?')
+    parser.add_argument(
+        'pron_path', default='./data/prondict_ice.txt',
+        nargs='?')
+    parser.add_argument(
+        'words', default=['adolfsdóttir', 'skynsemi', 'uppvaxtarskilyrði'],
+        nargs='?')
     parser.add_argument('exp_name', default='g2p_ice', nargs='?')
     parser.add_argument('emb_dim', default=500, nargs='?')
     parser.add_argument('hidden_dim', default=500, nargs='?')
@@ -60,6 +67,7 @@ def main():
     for word in args.words:
         print(word)
         predict(model, word, full_ds)
+
 
 if __name__ == '__main__':
     main()

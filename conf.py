@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,10 +17,18 @@
 
 # Characters
 ICE_ALPHABET = 'aábdðeéfghiíjklmnoóprstuúvxyýþæö'
-OTHER_CHARS = ' .,?!:„“'
+OTHER_CHARS = ' .,?!:„“-–'
+
 # Phones
 sil_phone = '~'
+
+# Parameters
+MAX_WORDS = 15
+MIN_WORDS = 5
+
 
 # Paths
 SEQUITUR_MDL_PATH = './pron_data/ipd_clean_slt2018.mdl'
 VALID_DIPHONES_PATH = './pron_data/diphones/complete_ipa.txt'
+XSAMPA_DIPHONES_PATH = './data/diphones/diphones_xsampa.txt'
+IPA_XSAMPA_PATH = './data/ipa_2_xsampa.txt'

@@ -12,23 +12,26 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+from conf import XSAMPA_DIPHONES_PATH, IPA_XSAMPA_PATH
 
-def x2i_diphones(i2x_path='./data/ipa_2_xsampa.txt', ipa_ind:int=0,
-    xsampa_ind:int=2, xdp_path:str='./data/diphones/diphones_xsampa.txt',
-    out_path:str='./data/diphones/diphones_ipa.txt'):
+
+def x2i_diphones(
+        out_path: str, i2x_path: str = IPA_XSAMPA_PATH,
+        xdp_path: str = XSAMPA_DIPHONES_PATH, ipa_ind: int = 0,
+        xsampa_ind: int = 2):
     '''
     Convert a list of XSAMPA diphones to a list of IPA diphones. Additionally
     if the symbol '_' appears in the diphone we skip the diphone.
 
     Input arguments:
+    * out_path (str): The target path to store the IPA output in
+    the same format
     * i2x_path (str): The path to the IPA XSAMPA index
     * ipa_ind (int): The index of the IPA symbol in each line
     of the source file when the line is split on \t
     * xsampa_ind (int): Same, but the index of the XSAMPA symbol
     xdp_path (str): The path to the list of XSAMPA diphones where
     each line is a tab seperated tuple.
-    * out_path (str): The target path to store the IPA output in
-    the same format
     '''
     xs2ipa = {}
     with open(i2x_path) as m_f:
@@ -37,7 +40,6 @@ def x2i_diphones(i2x_path='./data/ipa_2_xsampa.txt', ipa_ind:int=0,
             i, x = ps[ipa_ind], ps[xsampa_ind]
             xs2ipa[x.strip()] = i.strip()
 
-    result = []
     with open(xdp_path) as i_f, open(out_path, 'w') as o_f:
         for line in i_f:
             p1, p2 = line.split(' ')
@@ -45,28 +47,31 @@ def x2i_diphones(i2x_path='./data/ipa_2_xsampa.txt', ipa_ind:int=0,
                 o_f.write("{}\t{}\n".format(
                     xs2ipa[p1.strip()], xs2ipa[p2.strip()]))
 
-def x2i_map(src_path:str='./data/ipa_2_xsampa.txt', ipa_ind:int=0,
-    xsampa_ind:int=1) -> dict:
+
+def x2i_map(
+        i2x_path: str = IPA_XSAMPA_PATH, ipa_ind: int = 0,
+        xsampa_ind: int = 1) -> dict:
     '''
     Generate a mapping from XSAMPA to IPA in the
     form of a dictionary. This function expects a
     tab seperated file of IPA, XSAMPA symbols per line.
 
     Input arguments:
-    * src_path (str): The path to the IPA XSAMPA index
+    * i2x_path (str): The path to the IPA XSAMPA index
     * ipa_ind (int): The index of the IPA symbol in each line
     of the source file when the line is split on \t
     * xsampa_ind (int): Same, but the index of the XSAMPA symbol
     '''
     xs2ipa = {}
-    with open(src_path) as m_f:
+    with open(i2x_path) as m_f:
         for line in m_f:
             ps = line.split('\t')
             i, x = ps[ipa_ind], ps[xsampa_ind]
             xs2ipa[x.strip()] = i.strip()
     return xs2ipa
 
-def x2i_prondict(src_path:str, out_path:str, xs2ipa=x2i_map()):
+
+def x2i_prondict(src_path: str, out_path: str, xs2ipa: dict = None):
     '''
     Convert a pronounciation dictionary from XSAMPA format
     to IPA format.
@@ -76,14 +81,17 @@ def x2i_prondict(src_path:str, out_path:str, xs2ipa=x2i_map()):
     where each line consists of "<word>\t<XSAMPA pron>"
     * out_path (str): The target path for the IPA pronounciation dictionary
     where each line follows the same format.
-    * xs2ipa (dict): A mapping from XSAMPA to IPA
+    * xs2ipa (dict or None): A mapping from XSAMPA to IPA
     '''
+    if xs2ipa is None:
+        xs2ipa = x2i_map()
     with open(src_path) as i_f, open(out_path, 'w') as o_f:
         for line in i_f:
             w, pron = line.split('\t')
             o_f.write("{}\t{}\n".format(w, xs2ipa_str(pron, xs2ipa)))
 
-def xs2ipa_str(xs_string:str, xs2ipa:dict):
+
+def xs2ipa_str(xs_string: str, xs2ipa: dict):
     '''
     Map a space seperated string of XSAMPA symbols to a corresponding
     string of space seperated IPA symbols

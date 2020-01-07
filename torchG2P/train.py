@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,22 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import argparse
 import os
 import time
-import argparse
-
 from typing import List
 
+import Levenshtein
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.nn.utils import clip_grad_norm
-import Levenshtein
 
-
-from PronSet import PronSet, extract_pron
 from G2P import G2P
+from PronSet import PronSet, extract_pron
 
 
 def load_data(path: str, splits: List[float], **kwargs):
@@ -49,8 +49,8 @@ def load_data(path: str, splits: List[float], **kwargs):
 
 
 def load_model(
-    num_g: int, num_p: int, model_path: str, device=torch.device('cpu'),
-    **kwargs):
+        num_g: int, num_p: int, model_path: str, device=torch.device('cpu'),
+        **kwargs):
     '''
     Input arguments:
     * num_g (int): The size of the grapheme vocabulary
@@ -74,7 +74,8 @@ def load_model(
 
 def train(
         model: G2P, train_ds: PronSet, val_ds: PronSet, ckp_path: str,
-        epochs: int=10, log_step: int=100, device=torch.device('cpu'), **kwargs):
+        epochs: int = 10, log_step: int = 100, device=torch.device('cpu'),
+        **kwargs):
     '''
     Input arguments:
     * model (G2P): A G2P instance
@@ -97,7 +98,8 @@ def train(
         print("Epoch {} / {}".format(epoch+1, epochs))
         for idx, batch in enumerate(dl):
             output, _, _ = model(
-                batch[0].to(device), batch[1][:, :-1].detach().to(device), device=device)
+                batch[0].to(device), batch[1][:, :-1].detach().to(device),
+                device=device)
             target = batch[1][:, 1:].to(device)
             loss = criterion(
                 output.view(output.shape[0] * output.shape[1], -1),
@@ -148,7 +150,9 @@ def validate(
     model.eval()
     print("Starting Evaluation")
     for idx, batch in enumerate(dl):
-        output, _, _ = model(batch[0].to(device), batch[1][:, :-1].to(device), device=device)
+        output, _, _ = model(
+            batch[0].to(device), batch[1][:, :-1].to(device),
+            device=device)
         target = batch[1][:, 1:].to(device)
         loss = criterion(output.squeeze(0), target.squeeze(0))
         val_loss += loss.item() * batch[0].shape[0]
@@ -181,9 +185,11 @@ def test(model, test_ds, device=torch.device('cpu'), **kwargs):
     print("Phoneme error rate (PER): {:.2f}\nWord error rate (WER): {:.2f}"
           .format(test_per, test_wer))
 
+
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('pron_path', default='./data/prondict_ice.txt', nargs='?')
+    parser.add_argument(
+        'pron_path', default='./data/prondict_ice.txt', nargs='?')
     parser.add_argument('exp_name', default='g2p_ice', nargs='?')
     parser.add_argument('epochs', default=50, nargs='?')
     parser.add_argument('batch_size', default=100, nargs='?')

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+#
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,7 +16,6 @@
 
 
 from conf import VALID_DIPHONES_PATH
-VALID_DIPHONES_PATH = './pron_data/diphones/complete_ipa.txt'
 
 phonemes = [
     'a', 'r', 't', 's', 'n', 'ɪ', 'l', 'ʏ', 'k', 'm',
@@ -29,11 +28,11 @@ phonemes = [
 sil_phone = '~'
 sil_phonemes = phonemes
 sil_phonemes.append(sil_phone)
-
 sil_diphones = []
 diphones = []
 unique_diphones = set()
-list_diphones  = []
+list_diphones = []
+
 with open(VALID_DIPHONES_PATH) as i_f:
     for line in i_f:
         p1, p2 = line.split('\t')

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+#
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -15,17 +15,19 @@
 # limitations under the License.
 
 
+import math
 import os
 import re
-import math
-import sequitur
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
-from tqdm import tqdm
 
 from g2p import SequiturTool, Translator, loadG2PSample
+from tqdm import tqdm
+
 from conf import ICE_ALPHABET, SEQUITUR_MDL_PATH
+
 sub_pattern = re.compile(r'[^{}]'.format(ICE_ALPHABET))
+
 
 class Options(dict):
     def __init__(self, modelFile=SEQUITUR_MDL_PATH, encoding="UTF-8",
@@ -44,11 +46,14 @@ class Options(dict):
     def __setattr__(self, name, value):
         self[name] = value
 
-def predict(words, translator):
+
+def predict(words, translator, options):
     '''
     Input arguments:
     * words (list): A list of strings
     * translator (g2p.Translator instance)
+    * options (Options instance): The options that have been
+    passed onto translator
 
     Yields:
     [{"word": word_1, "results":results_1}, ...]
@@ -87,7 +92,8 @@ def predict(words, translator):
             pass
         yield output
 
-def get_phones(token, translator):
+
+def get_phones(token, translator, options):
     '''
     Takes a string forming a sentence and returns a list of
     phonetic predictions for each word.
@@ -95,14 +101,17 @@ def get_phones(token, translator):
     Input arguments:
     * token (str): A string of words seperated by a space forming a sentence.
     * translator (g2p.Translator instance)
+    * options (Options instance): The options that have been
+    passed onto translator
     '''
 
     words = [normalize_word(w) for w in token.strip().split()]
-    predictions = list(predict(words, translator=translator))
+    predictions = list(predict(words, translator, options))
     phones = []
     for pred in predictions:
         phones.append(pred['results'][0]['pronunciation'])
     return phones
+
 
 def normalize_word(word, sub_pattern=sub_pattern):
     '''
@@ -118,8 +127,10 @@ def normalize_word(word, sub_pattern=sub_pattern):
     word = re.sub(sub_pattern, '', word)
     return word
 
-def g2p_file(src_path:str, out_path:str, n_jobs:int=16, contains_scores=False,
-    translator=None):
+
+def g2p_file(
+        src_path: str, out_path: str, n_jobs: int = 16, contains_scores=False,
+        translator_options=None):
     '''
     Do grapheme-to-phoneme predictions on a list of tokens
     in a single file.
@@ -134,12 +145,16 @@ def g2p_file(src_path:str, out_path:str, n_jobs:int=16, contains_scores=False,
     * contains_scores (bool): If True, each line in the input file
     is e.g. <sentence>\t<source_id>\t<score> else it is
     <sentence>\t<source_id>
-    * translator (g2p.Translator instance)
+    * translator_options (Options instance): Options passed onto g2p.Translator
     '''
-    if translator is None:
+    if translator_options is None:
         options = Options(
             modelFile=os.getenv("G2P_MODEL", SEQUITUR_MDL_PATH))
-        translator = Translator(SequiturTool.procureModel(options, loadG2PSample))
+        translator = Translator(SequiturTool.procureModel(
+            options, loadG2PSample))
+    else:
+        translator = Translator(SequiturTool.procureModel(
+            translator_options, loadG2PSample))
 
     executor = ProcessPoolExecutor(max_workers=n_jobs)
     futures = []
@@ -153,11 +168,12 @@ def g2p_file(src_path:str, out_path:str, n_jobs:int=16, contains_scores=False,
 
         with open(out_path, 'w') as out_file:
             results = [
-                (future[0], future[1], future[2], future[3].result()) for future
-                in tqdm(futures) if future[3].result() is not None]
+                (future[0], future[1], future[2], future[3].result())
+                for future in tqdm(futures) if future[3].result() is not None]
             for res in results:
-                out_file.write('{}\t{}\t{}\t~ {} ~\n'.format(res[0].strip(),\
-                    res[1].strip(), res[2].strip(), '\t'.join(res[3][:])))
+                out_file.write('{}\t{}\t{}\t~ {} ~\n'.format(
+                    res[0].strip(), res[1].strip(), res[2].strip(),
+                    '\t'.join(res[3][:])))
     else:
         with open(src_path, 'r') as token_file:
             for line in token_file:
@@ -170,9 +186,5 @@ def g2p_file(src_path:str, out_path:str, n_jobs:int=16, contains_scores=False,
                 (future[0], future[1], future[2].result()) for future
                 in tqdm(futures) if future[2].result() is not None]
             for res in results:
-                out_file.write('{}\t{}\t~ {} ~\n'.format(res[0].strip(),\
-                    res[1].strip(), '\t'.join(res[2][:])))
-
-if __name__ == '__main__':
-    g2p_file('final_results/2.6.txt',
-        'final_results/2.6_g2p.txt', contains_scores=False)
+                out_file.write('{}\t{}\t~ {} ~\n'.format(
+                    res[0].strip(), res[1].strip(), '\t'.join(res[2][:])))

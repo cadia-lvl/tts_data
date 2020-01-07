@@ -1,3 +1,5 @@
+# -*- coding: utf-8 -*-
+#
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,8 +24,10 @@ from postprocess import Beam
 
 class G2P(nn.Module):
     def __init__(
-            self, num_g: int, num_p: int, emb_dim: int=256,
-            hidden_dim: int=256, beam_size: int=2, max_decode_len: int=20, **kwargs):
+            self, num_g: int, num_p: int,
+            emb_dim: int = 256, hidden_dim: int = 256,
+            beam_size: int = 2,
+            max_decode_len: int = 20):
         '''
         Input arguments:
         * num_g (int): The size of the grapheme vocabulary
@@ -62,7 +66,8 @@ class G2P(nn.Module):
         '''.format(
             self.num_g, self.emb_dim, self.emb_dim, self.hidden_dim,
             self.num_p, self.emb_dim, self.emb_dim, self.hidden_dim,
-            next(self.parameters()).is_cuda, self.beam_size, self.max_decode_len)
+            next(self.parameters()).is_cuda, self.beam_size,
+            self.max_decode_len)
 
     def forward(self, g_seq, p_seq=None, device=torch.device('cpu')):
         '''
@@ -79,34 +84,36 @@ class G2P(nn.Module):
         if p_seq is not None:
             # We are training
             return self.decoder(p_seq, h, c, context)
-        else:
-            # We are generating
-            assert g_seq.shape[0] == 1, "batch size must be one when testing"
-            return self._gen(h, c, context, device=device)
+        # We are generating
+        assert g_seq.shape[0] == 1, "batch size must be one when testing"
+        return self._gen(h, c, context, device=device)
 
     def _gen(self, h, c, context, device=torch.device('cpu')):
         '''
         Input arguments:
-        * h (tensor): A (1 x hidden_dim) shaped tensor containinig the last hidden
-        emission from the encoder
-        * c (tensor): A (1 x hidden_dim) shaped tensor containing the last cell state
-        from the encoder
-        * context (tensor) A (1 x seq_g x hidden_dim) shaped tensor containing encoder
+        * h (tensor): A (1 x hidden_dim) shaped tensor containinig the last
+        hidden emission from the encoder
+        * c (tensor): A (1 x hidden_dim) shaped tensor containing the last
+        cell state from the encoder
+        * context (tensor) A (1 x seq_g x hidden_dim) shaped tensor containing
+        encoder
         emissions for all encoder timesteps
         '''
         beam = Beam(self.beam_size, device=device)
-        h = h.expand(beam.size, h.shape[1]) # (beam_sz x hidden_dim)
-        c = c.expand(beam.size, c.shape[1]) # (beam_sz x hidden_dim)
-        context = context.expand(beam.size, context.shape[1], context.shape[2]) # (beam_sz x seq_g x hidden_dim)
+        h = h.expand(beam.size, h.shape[1])  # (beam_sz x hidden_dim)
+        c = c.expand(beam.size, c.shape[1])  # (beam_sz x hidden_dim)
+        # (beam_sz x seq_g x hidden_dim)
+        context = context.expand(beam.size, context.shape[1], context.shape[2])
 
         for _ in range(self.max_decode_len):
-            x = beam.get_current_state() # (beam_size)
+            x = beam.get_current_state()  # (beam_size)
             o, h, c = self.decoder(x.unsqueeze(1), h, c, context)
             if beam.advance(o.data.squeeze(1)):  # (beam_size x num_phones)
                 break
             h.data.copy_(h.data.index_select(0, beam.get_current_origin()))
             c.data.copy_(c.data.index_select(0, beam.get_current_origin()))
-        return torch.Tensor(beam.get_hyp(0)).to(dtype=torch.long, device=device)
+        return torch.Tensor(beam.get_hyp(0)).to(
+            dtype=torch.long, device=device)
 
 
 class Encoder(nn.Module):
@@ -164,7 +171,8 @@ class Encoder(nn.Module):
         cell state of the RNN
         '''
         g_seq = self.embedding(g_seq)  # batch x seq_g x emb_dim
-        out, (h, c) = self.lstm(g_seq, self.init_hidden(g_seq.shape[0], device=device))
+        out, (h, c) = self.lstm(g_seq, self.init_hidden(
+            g_seq.shape[0], device=device))
         return out, h.squeeze(dim=0), c.squeeze(dim=0)
 
     def init_hidden(self, bz: int, device=torch.device('cpu')):

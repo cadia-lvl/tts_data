@@ -29,6 +29,8 @@ from conf import ICE_ALPHABET, SEQUITUR_MDL_PATH, VARIANTS_MASS, VARIANTS_NUMBER
 
 SUB_PATTERN = re.compile(r'[^{}]'.format(ICE_ALPHABET))
 
+TRANSLATOR = None
+TRANSLATOR_OPTIONS = None
 
 class Options(dict):
     """Options class for sequitur.Translator"""
@@ -49,7 +51,7 @@ class Options(dict):
         self[name] = value
 
 
-def predict(words, translator, options):
+def predict(words):
     '''
     Input arguments:
     * words (list): A list of strings
@@ -74,12 +76,12 @@ def predict(words, translator, options):
         try:
             total_posterior = 0.0
             n_variants = 0
-            n_best = translator.nBestInit(left)
+            n_best = TRANSLATOR.nBestInit(left)
             while (
-                    total_posterior < options.variants_mass and
-                    n_variants < options.variants_number):
+                    total_posterior < TRANSLATOR_OPTIONS.variants_mass and
+                    n_variants < TRANSLATOR_OPTIONS.variants_number):
                 try:
-                    log_like, result = translator.nBestNext(n_best)
+                    log_like, result = TRANSLATOR.nBestNext(n_best)
                 except StopIteration:
                     break
                 posterior = math.exp(log_like - n_best.logLikTotal)
@@ -90,25 +92,22 @@ def predict(words, translator, options):
                 total_posterior += posterior
                 n_variants += 1
 
-        except Translator.TranslationFailure:
+        except TRANSLATOR.TranslationFailure:
             pass
         yield output
 
 
-def get_phones(utt, translator, options):
+def get_phones(utt):
     '''
     Takes a string forming a sentence and returns a list of
     phonetic predictions for each word.
 
     Input arguments:
     * utt (str): A string of words seperated by a space forming a sentence.
-    * translator (g2p.Translator instance)
-    * options (Options instance): The options that have been
-    passed onto translator
     '''
 
     words = [normalize_word(w) for w in utt.strip().split()]
-    predictions = list(predict(words, translator, options))
+    predictions = list(predict(words))
     phones = []
     for pred in predictions:
         phones.append(pred['results'][0]['pronunciation'])
@@ -149,14 +148,17 @@ def g2p_file(
     <sentence>\t<source_id>
     * translator_options (Options instance): Options passed onto g2p.Translator
     '''
+    global TRANSLATOR
+    global TRANSLATOR_OPTIONS
     if translator_options is None:
-        options = Options(
+        TRANSLATOR_OPTIONS = Options(
             modelFile=os.getenv("G2P_MODEL", SEQUITUR_MDL_PATH))
-        translator = Translator(SequiturTool.procureModel(
-            options, loadG2PSample))
+        TRANSLATOR = Translator(SequiturTool.procureModel(
+            TRANSLATOR_OPTIONS, loadG2PSample))
     else:
-        translator = Translator(SequiturTool.procureModel(
-            translator_options, loadG2PSample))
+        TRANSLATOR_OPTIONS = translator_options
+        TRANSLATOR = Translator(SequiturTool.procureModel(
+            TRANSLATOR_OPTIONS, loadG2PSample))
 
     executor = ProcessPoolExecutor(max_workers=n_jobs)
     futures = []
@@ -166,7 +168,7 @@ def g2p_file(
             for line in utt_file:
                 utt, src, scr = line.split('\t')
                 futures.append([utt, src, scr, executor.submit(
-                    partial(get_phones, utt, translator=translator))])
+                    partial(get_phones, utt))])
 
         with open(out_path, 'w') as out_file:
             results = [
@@ -181,7 +183,7 @@ def g2p_file(
             for line in utt_file:
                 utt, src = line.split('\t')
                 futures.append([utt, src, executor.submit(
-                    partial(get_phones, utt, translator=translator))])
+                    partial(get_phones, utt))])
 
         with open(out_path, 'w') as out_file:
             results = [
@@ -190,3 +192,4 @@ def g2p_file(
             for res in results:
                 out_file.write('{}\t{}\t~ {} ~\n'.format(
                     res[0].strip(), res[1].strip(), '\t'.join(res[2][:])))
+

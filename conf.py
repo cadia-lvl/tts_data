@@ -15,6 +15,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
+from pathlib import Path
+
 # Parameters
 MAX_WORDS = 15
 MIN_WORDS = 5
@@ -24,12 +27,14 @@ DIPHONES_NEEDED = 20
 
 
 # Paths
-SEQUITUR_MDL_PATH = './pron_data/ipd_clean_slt2018.mdl'
-VALID_DIPHONES_PATH = './pron_data/diphones/complete_ipa.txt'
-XSAMPA_DIPHONES_PATH = './data/diphones/diphones_xsampa.txt'
-IPA_XSAMPA_PATH = './data/ipa_2_xsampa.txt'
-PRONDICT_IPA_PATH = './data/prondict_ice.txt'
-BIN_LIST_SORTED_PATH = 'pron_data/bin_list_sorted.txt'
+ROOT_DIR = Path(os.path.dirname(os.path.realpath(__file__)))
+DATA_DIR = ROOT_DIR / 'pron_data'
+SEQUITUR_MDL_PATH = DATA_DIR / 'ipd_clean_slt2018.mdl'
+VALID_DIPHONES_PATH = DATA_DIR / 'diphones/complete_ipa.txt'
+XSAMPA_DIPHONES_PATH = DATA_DIR / 'diphones/diphones_xsampa.txt'
+IPA_XSAMPA_PATH = DATA_DIR / 'ipa_2_xsampa.txt'
+PRONDICT_IPA_PATH = DATA_DIR / 'prondict_ice.txt'
+BIN_LIST_SORTED_PATH = DATA_DIR / 'bin_list_sorted.txt'
 
 # Graphemes
 ICE_ALPHABET = 'aábdðeéfghiíjklmnoóprstuúvxyýþæö'

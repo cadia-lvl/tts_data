@@ -7,4 +7,3 @@ python-dateutil==2.8.0
 python-Levenshtein==0.12.0
 sequitur==1.0a1
 six==1.12.0
-torch==1.2.0

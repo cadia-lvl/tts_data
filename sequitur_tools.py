@@ -95,19 +95,19 @@ def predict(words, translator, options):
         yield output
 
 
-def get_phones(token, translator, options):
+def get_phones(utt, translator, options):
     '''
     Takes a string forming a sentence and returns a list of
     phonetic predictions for each word.
 
     Input arguments:
-    * token (str): A string of words seperated by a space forming a sentence.
+    * utt (str): A string of words seperated by a space forming a sentence.
     * translator (g2p.Translator instance)
     * options (Options instance): The options that have been
     passed onto translator
     '''
 
-    words = [normalize_word(w) for w in token.strip().split()]
+    words = [normalize_word(w) for w in utt.strip().split()]
     predictions = list(predict(words, translator, options))
     phones = []
     for pred in predictions:
@@ -134,12 +134,12 @@ def g2p_file(
         src_path: str, out_path: str, n_jobs: int = 16, contains_scores=False,
         translator_options=None):
     '''
-    Do grapheme-to-phoneme predictions on a list of tokens
+    Do grapheme-to-phoneme predictions on a list of utterances
     in a single file.
 
     Input arguments:
     * src_path (str): The path to the file containing multiple
-    tokens, one per line
+    utterances, one per line
     * out_path (str): The target path the the file that stores
     the results.
     * n_jobs (int): The maximum number of processes that can
@@ -162,11 +162,11 @@ def g2p_file(
     futures = []
 
     if contains_scores:
-        with open(src_path, 'r') as token_file:
-            for line in token_file:
-                token, src, scr = line.split('\t')
-                futures.append([token, src, scr, executor.submit(
-                    partial(get_phones, token, translator=translator))])
+        with open(src_path, 'r') as utt_file:
+            for line in utt_file:
+                utt, src, scr = line.split('\t')
+                futures.append([utt, src, scr, executor.submit(
+                    partial(get_phones, utt, translator=translator))])
 
         with open(out_path, 'w') as out_file:
             results = [
@@ -177,11 +177,11 @@ def g2p_file(
                     res[0].strip(), res[1].strip(), res[2].strip(),
                     '\t'.join(res[3][:])))
     else:
-        with open(src_path, 'r') as token_file:
-            for line in token_file:
-                token, src = line.split('\t')
-                futures.append([token, src, executor.submit(
-                    partial(get_phones, token, translator=translator))])
+        with open(src_path, 'r') as utt_file:
+            for line in utt_file:
+                utt, src = line.split('\t')
+                futures.append([utt, src, executor.submit(
+                    partial(get_phones, utt, translator=translator))])
 
         with open(out_path, 'w') as out_file:
             results = [

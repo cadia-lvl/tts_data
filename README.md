@@ -15,7 +15,7 @@ This file contains methods for parsing and normalizing text utterances from the 
 * Malromur
 
 ## `score.py`
-This file contains method for ordering a collection of tokens by a heuristic that should increase diphone coverage. This is still a work in progress.
+This file contains method for ordering a collection of utterances by a heuristic that should increase diphone coverage. This is still a work in progress.
 
 ## `prondata.py`
 This file contains many methods that can be used for analyzing diphones in the set, coverage, missing diphones and more.

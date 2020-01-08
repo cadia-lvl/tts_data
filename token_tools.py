@@ -1,5 +1,6 @@
+"""Preprocessing and other routines for graphemes"""
 # -*- coding: utf-8 -*-
-#
+
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,12 +23,12 @@ from collections import defaultdict
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
 from pathlib import Path
-
-from misc.xml_tools import parse
 from tqdm import tqdm
 
+from misc.xml_tools import parse
+
 from bin_tools import BinVerifer
-from conf import ICE_ALPHABET, OTHER_CHARS
+from conf import ICE_ALPHABET, MAX_WORDS, MIN_WORDS, OTHER_CHARS
 
 
 def gs_to_files(src_dir: str, out_dir: str):
@@ -59,11 +60,11 @@ def gs_to_files(src_dir: str, out_dir: str):
                         o_f.write('{}\n'.format(token))
                         token, idx = '', 0
                     else:
-                        w, _ = line.split('\t')
-                        if w in OTHER_CHARS or idx == 0:
-                            token += w
+                        word, _ = line.split('\t')
+                        if word in OTHER_CHARS or idx == 0:
+                            token += word
                         else:
-                            token += ' {}'.format(w)
+                            token += ' {}'.format(word)
                         idx += 1
 
 
@@ -87,9 +88,7 @@ def hlbs_to_files(src_dir: str, out_dir: str):
 
     for directory in os.listdir(src_dir):
         if os.path.isdir(os.path.join(src_dir, directory)):
-            with open(
-                os.path.join(out_dir, '{}.txt'.format(directory)), 'w')
-            as o_f:
+            with open(os.path.join(out_dir, '{}.txt'.format(directory)), 'w') as o_f:
                 for fname in os.listdir(
                         os.path.join(src_dir, directory, 'text')):
                     if os.path.isfile(os.path.join(
@@ -150,7 +149,7 @@ def malromur_to_file(
         cursor.close()
 
     except sqlite3.Error as error:
-            print("Failed to read data from sqlite table", error)
+        print("Failed to read data from sqlite table", error)
     finally:
         if conn:
             conn.close()
@@ -194,17 +193,17 @@ def rmh_parser(src_dir: str, out_dir: str):
     for _ in os.walk(src_dir):
         f_count += 1
 
-    for dirName, subdirList, fileList in tqdm(os.walk(src_dir), total=f_count):
-        for fname in fileList:
+    for dir_name, _, file_list in tqdm(os.walk(src_dir), total=f_count):
+        for fname in file_list:
             try:
-                source = Path(dirName).parent.parent.name
-                sentences[source] += parse(os.path.join(dirName, fname))
+                source = Path(dir_name).parent.parent.name
+                sentences[source] += parse(os.path.join(dir_name, fname))
                 futures.append([
                     source,
                     executor.submit(
-                        partial(parse, os.path.join(dirName, fname)))])
-            except Exception as e:
-                print(e, os.path.join(dirName, fname))
+                        partial(parse, os.path.join(dir_name, fname)))])
+            except OSError as exception:
+                print(exception, os.path.join(dir_name, fname))
                 continue
     for (src, text) in [
             (future[0], future[1].result()) for future in tqdm(futures)]:
@@ -251,8 +250,8 @@ def tokens_to_file(src_dir: str, out_path: str):
 def preprocess(
         src_path: str, out_path: str, bad_path: str,
         bin_ver=BinVerifer(), min_char_length: int = 10,
-        max_char_length: int = None, min_word_length: int = 5,
-        max_word_length: int = 15, contains_pron: bool = False):
+        max_char_length: int = None, min_word_length: int = MIN_WORDS,
+        max_word_length: int = MAX_WORDS, contains_pron: bool = False):
     '''
     Given a path to a file where each line is either
     <sentence>\t<source_id>\t<transcription>
@@ -275,9 +274,9 @@ def preprocess(
     of characters a sentence needs to contain to pass.
     * max_char_length (int or None = None): The maximum
     number of characters a sentence can contain to pass.
-    * min_word_length (int or None = 5): The minimum number
+    * min_word_length (int or None = conf.MIN_WORDS): The minimum number
     of words a sentence needs to contain to pass.
-    * max_word_length (int or None = 15): The maximum number
+    * max_word_length (int or None = conf.MAX_WORDS): The maximum number
     of words a sentence can contain to pass.
     * contains_pron (bool = False): Is True if each line
     contains a transcription
@@ -289,16 +288,16 @@ def preprocess(
             open(bad_path, 'w') as b_f:
         for line in tqdm(i_f, total=num_lines):
             if contains_pron:
-                token, src, *pron = line.split('\t')
+                token, src, *_ = line.split('\t')
             else:
                 token, src = line.split('\t')
                 src = src.strip()
             # check if too short
-            if (min_char_length and len(token) < min_char_length)
+            if (min_char_length and len(token) < min_char_length)\
             or (min_word_length and len(token.split()) < min_word_length):
                 b_f.write('{}\t{}\t{}\n'.format(token, src, 'SHORT'))
             # check if too long
-            elif (max_char_length and len(token) > max_char_length)
+            elif (max_char_length and len(token) > max_char_length)\
             or (max_word_length and len(token.split()) > max_word_length):
                 b_f.write('{}\t{}\t{}\n'.format(token, src, 'LONG'))
             # check if starts with a capital letter
@@ -311,7 +310,7 @@ def preprocess(
             elif token.find('.') not in [-1, len(token) - 1]:
                 b_f.write('{}\t{}\t{}\n'.format(token, src, 'PUNC'))
             # check if it contains either „ or “ without the other
-            elif ('„' in token and '“' not in token)
+            elif ('„' in token and '“' not in token)\
             or ('„' not in token and '“' in token):
                 b_f.write('{}\t{}\t{}\n'.format(token, src, 'GOOSE'))
             # lastly check if in BIN

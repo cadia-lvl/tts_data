@@ -1,5 +1,6 @@
+"""Postprocessing for the PyTorch G2P model"""
 # -*- coding: utf-8 -*-
-#
+
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -17,7 +18,7 @@
 import torch
 
 
-class Beam(object):
+class Beam:
     """
     Ordered beam of candidate outputs.
     See https://github.com/MaximumEntropy/Seq2Seq-PyTorch/ for more
@@ -46,12 +47,12 @@ class Beam(object):
             device=self.device, dtype=torch.float).zero_()
 
         # The backpointers at each time-step.
-        self.prevKs = []
+        self.prev_kk = []
 
         # The outputs at each time-step.
-        self.nextYs = [torch.Tensor(size).to(
+        self.next_yy = [torch.Tensor(size).to(
             device=self.device, dtype=torch.long).fill_(self.pad)]
-        self.nextYs[0][0] = self.bos
+        self.next_yy[0][0] = self.bos
 
     def get_current_state(self):
         '''
@@ -59,44 +60,44 @@ class Beam(object):
 
         Returns: A (size) shaped tensor
         '''
-        return self.nextYs[-1]
+        return self.next_yy[-1]
 
     # Get the backpointers for the current timestep.
     def get_current_origin(self):
         """Get the backpointer to the beam at this step."""
-        return self.prevKs[-1]
+        return self.prev_kk[-1]
 
     def advance(self, workd_lk):
         """Advance the beam."""
         num_words = workd_lk.size(1)
 
         # Sum the previous scores.
-        if len(self.prevKs) > 0:
+        if len(self.prev_kk) > 0:
             beam_lk = workd_lk + self.scores.unsqueeze(1).expand_as(workd_lk)
         else:
             beam_lk = workd_lk[0]
 
         flat_beam_lk = beam_lk.view(-1)
 
-        bestScores, bestScoresId = flat_beam_lk.topk(self.size, 0,
-                                                     True, True)
-        self.scores = bestScores
+        best_scores, best_scores_id = flat_beam_lk.topk(
+            self.size, 0, True, True)
+        self.scores = best_scores
 
-        # bestScoresId is flattened beam x word array, so calculate which
+        # best_scores_id is flattened beam x word array, so calculate which
         # word and beam each score came from
-        prev_k = bestScoresId / num_words
-        self.prevKs.append(prev_k)
-        self.nextYs.append(bestScoresId - prev_k * num_words)
+        prev_k = best_scores_id / num_words
+        self.prev_kk.append(prev_k)
+        self.next_yy.append(best_scores_id - prev_k * num_words)
         # End condition is when top-of-beam is EOS.
-        if self.nextYs[-1][0] == self.eos:
+        if self.next_yy[-1][0] == self.eos:
             self.done = True
         return self.done
 
     def get_hyp(self, k):
         """Get hypotheses."""
         hyp = []
-        # print(len(self.prevKs), len(self.nextYs), len(self.attn))
-        for j in range(len(self.prevKs) - 1, -1, -1):
-            hyp.append(self.nextYs[j + 1][k])
-            k = self.prevKs[j][k]
+        # print(len(self.prev_kk), len(self.next_yy), len(self.attn))
+        for j in range(len(self.prev_kk) - 1, -1, -1):
+            hyp.append(self.next_yy[j + 1][k])
+            k = self.prev_kk[j][k]
         return hyp[::-1]

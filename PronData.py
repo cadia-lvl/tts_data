@@ -1,5 +1,7 @@
+"""A module for many different kinds of operations on the data schemas
+used in this work."""
 # -*- coding: utf-8 -*-
-#
+
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -22,28 +24,32 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tqdm import tqdm
 
-from score import phonemes, sil_diphones, sil_phone, sil_phonemes
+from conf import DIPHONES, PHONEMES, SIL_PHONE, DIPHONES_NEEDED
 
 
 class PronData:
+    """
+    A class for many different kinds of operations on the data schemas
+    used in this work.
+    """
     def __init__(
-            self, src_path: str, needed_dps=[], all_phones=sil_phonemes,
-            all_diphones=sil_diphones, contains_scores=False, num_needed=20):
+            self, src_path: str, needed_dps=None, all_phones=PHONEMES+SIL_PHONE,
+            all_diphones=DIPHONES, contains_scores=False, num_needed=DIPHONES_NEEDED):
         '''
-        A class for many different kinds of operations on the data schemas
-        used in this work.
-
         Input arguments:
         * src_path (str): A path to a G2P output file where each line
         contains a token and a pronounciation
+        * needed_dps = (list/None = None): A list of diphones that are
+        needed that potentially exist in this dataset. This is only relevant
+        for self.export_needed_from_ids() and self.collect_needed_diphones()
         * all_phones (list): A list of all phones.
         * all_diphones (list) : A list of all possible diphones where each
         item in the list is a concatenated string of two phonemes.
         * contains_scores (bool): If True, each line in the input file
         is e.g. <sentence>\t<source_id>\t<score> else it is
         <sentence>\t<source_id>
-        * num_needed (int): This is relevant when finding dihpones missing in
-        other PronData sets. It is important only to
+        * num_needed (int = conf.DIPHONES_NEEDED): This is relevant when
+        finding dihpones missing in other PronData sets. It is important only to
         self.export_needed_from_ids() and self.collect_needed_diphones()
         '''
         self.contains_scores = contains_scores
@@ -74,8 +80,8 @@ class PronData:
                 self.srcs.append(src)
                 self.prons.append(phone_strings)
                 phones = self.sentence_2_phones(phone_strings)
-                for p in phones:
-                    self.phone_counts[p] += 1
+                for phone in phones:
+                    self.phone_counts[phone] += 1
                 diphones = self.sentence_2_diphones(phone_strings)
                 valid = []
                 utt_added = False
@@ -84,7 +90,7 @@ class PronData:
                         self.diphone_counts[self.dpkey(diphone)] += 1
                         self.diphone_map[diphone[0]][diphone[1]] += 1
                         valid.append(diphone)
-                        if self.dpkey(diphone) in needed_dps:
+                        if needed_dps is not None and self.dpkey(diphone) in needed_dps:
                             needed_dps[self.dpkey(diphone)] += 1
                             if needed_dps[self.dpkey(diphone)] >= num_needed:
                                 needed_dps.pop(self.dpkey(diphone))
@@ -216,8 +222,8 @@ class PronData:
             dp_dict = self.diphone_counts
 
         total = 0.0
-        for dp in self.all_diphones:
-            total += min(dp_dict[dp], n_needed)/n_needed
+        for diphone in self.all_diphones:
+            total += min(dp_dict[diphone], n_needed)/n_needed
         return total/len(self.all_diphones)
 
     def missing_diphones(self, pd_path=None):
@@ -239,8 +245,8 @@ class PronData:
         with open(pd_path) as i_f:
             for line in i_f:
                 _, phones = line.split('\t')
-                for dp in self.word_2_diphones(phones):
-                    pd_dps["".join(dp)] = True
+                for diphone in self.word_2_diphones(phones):
+                    pd_dps["".join(diphone)] = True
 
         pron_cov, non_cov = [], []
         for m_dp in missing:
@@ -278,19 +284,20 @@ class PronData:
         * fname (str): The name of the file to store the plot
         '''
         plt.clf()
-        m = np.zeros([len(self.all_phones), len(self.all_phones)])
-        for p, other_p in self.diphone_map.items():
-            for pp, num in other_p.items():
-                m[self.all_phones.index(p),
-                    self.all_phones.index(pp)] = num
-        _, ax = plt.subplots(figsize=(60, 60))
-        _ = ax.imshow(m)
-        ax.tick_params(axis='both', which='major', labelsize=80)
-        ax.tick_params(axis='both', which='minor', labelsize=80)
-        ax.set_xticks(np.arange(len(self.all_phones)))
-        ax.set_yticks(np.arange(len(self.all_phones)))
-        ax.set_xticklabels(self.all_phones)
-        ax.set_yticklabels(self.all_phones)
+        phone_map = np.zeros([len(self.all_phones), len(self.all_phones)])
+        for phone, others in self.diphone_map.items():
+            for other_phone, num in others.items():
+                phone_map[
+                    self.all_phones.index(phone),
+                    self.all_phones.index(other_phone)] = num
+        _, axis = plt.subplots(figsize=(60, 60))
+        _ = axis.imshow(phone_map)
+        axis.tick_params(axisis='both', which='major', labelsize=80)
+        axis.tick_params(axisis='both', which='minor', labelsize=80)
+        axis.set_xticks(np.arange(len(self.all_phones)))
+        axis.set_yticks(np.arange(len(self.all_phones)))
+        axis.set_xticklabels(self.all_phones)
+        axis.set_yticklabels(self.all_phones)
         plt.tight_layout()
         plt.savefig(fname)
         plt.show()
@@ -302,47 +309,48 @@ class PronData:
         '''
         o_f = open(out_file, 'w')
 
-        for dp, num in tqdm(dps.items()):
+        for diphone, num in tqdm(dps.items()):
             # first check if dp exists in this set
-            if self.diphone_counts[dp] != 0:
+            if self.diphone_counts[diphone] != 0:
 
                 # needed is the min of the number we actually want
                 # and what is actually available.
-                needed = min(num_needed - num, self.diphone_counts[dp])
+                needed = min(num_needed - num, self.diphone_counts[diphone])
                 # then search
                 for i in self.needed_ids:
-                    if dp in [self.dpkey(d) for d in self.get_diphones(i)]:
+                    if diphone in [self.dpkey(d) for d in self.get_diphones(i)]:
                         # we found one
                         o_f.write(self.get_line(i))
                         needed -= 1
                         if needed == 0:
                             break
 
-    def export_needed_from_ids(self, out_file):
+    def export_needed_from_ids(self, out_file: str):
+        """Exports the lines from the input file that include diphones that
+        are needed in this dataset"""
         o_f = open(out_file, 'w')
         for i in self.needed_ids:
             pron = "\t".join(self.get_pron(i))
             o_f.write(f'{self.get_utt(i)}\t{self.get_src(i)}\t{pron}')
 
-    def greedy_coverage(self, dps):
+    def greedy_coverage(self, dps, num_needed: int = DIPHONES_NEEDED):
         '''
         Measure greedy coverage by counting the number of
         diphones in dps that occur at least once that also
         occur n self.diphone_counts.
 
         The coverage of each diphone is equal to
-        count_bag / min(5, count_set) where count_bag is the
+        count_bag / min(num_needed, count_set) where count_bag is the
         number of this diphone in the added set and
         count_set is the number of  this diphone in the total
         corpus.
         '''
-
         total_count = 0
-        for dp, count in dps.items():
+        for diphone, count in dps.items():
             if count != 0:
-                num_occurs = self.diphone_counts[dp]
+                num_occurs = self.diphone_counts[diphone]
                 if num_occurs > 0:
-                    total_count += min(5, count) / min(5, num_occurs)
+                    total_count += min(num_needed, count) / min(num_needed, num_occurs)
         return total_count / self.num_nonzero
 
     def diphones_to_file(self, out_path: str):
@@ -354,11 +362,13 @@ class PronData:
             diphones = sorted(
                 self.diphone_counts.items(),
                 key=operator.itemgetter(1), reverse=True)
-            for d in diphones:
-                o_f.write(f'{d[0]}\t{d[1]}\n')
+            for diphone in diphones:
+                o_f.write(f'{diphone[0]}\t{diphone[1]}\n')
 
-    def export_needed_diphones(self, out_path: str, threshold=5):
+    def export_needed_diphones(self, out_path: str, num_needed=5):
+        """Pickles the diphones and how often they appear that are needed
+        in this dataset"""
         needed = {
-            k: v for k, v in self.diphone_counts.items() if v < threshold}
+            k: v for k, v in self.diphone_counts.items() if v < num_needed}
         with open(out_path, 'wb') as handle:
             pickle.dump(needed, handle, protocol=pickle.HIGHEST_PROTOCOL)

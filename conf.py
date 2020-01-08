@@ -1,5 +1,6 @@
+"""Wrapper for global parameters"""
 # -*- coding: utf-8 -*-
-#
+
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -14,17 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-
-# Characters
-ICE_ALPHABET = 'aábdðeéfghiíjklmnoóprstuúvxyýþæö'
-OTHER_CHARS = ' .,?!:„“-–'
-
-# Phones
-sil_phone = '~'
-
 # Parameters
 MAX_WORDS = 15
 MIN_WORDS = 5
+VARIANTS_NUMBER = 4
+VARIANTS_MASS = 0.9
+DIPHONES_NEEDED = 20
 
 
 # Paths
@@ -32,3 +28,29 @@ SEQUITUR_MDL_PATH = './pron_data/ipd_clean_slt2018.mdl'
 VALID_DIPHONES_PATH = './pron_data/diphones/complete_ipa.txt'
 XSAMPA_DIPHONES_PATH = './data/diphones/diphones_xsampa.txt'
 IPA_XSAMPA_PATH = './data/ipa_2_xsampa.txt'
+PRONDICT_IPA_PATH = './data/prondict_ice.txt'
+BIN_LIST_SORTED_PATH = 'pron_data/bin_list_sorted.txt'
+
+# Graphemes
+ICE_ALPHABET = 'aábdðeéfghiíjklmnoóprstuúvxyýþæö'
+OTHER_CHARS = ' .,?!:„“-–'
+
+# Phonemes
+SIL_PHONE = '~'
+PHONEMES = [
+    'a', 'r', 't', 's', 'n', 'ɪ', 'l', 'ʏ', 'k', 'm',
+    'ð', 'ɛ', 'v', 'p', 'h', 'f', 'j', 'c', 'i', 'ɔ', 'r̥',
+    'ei', 'ŋ', 'ɣ', 'ou', 'œ', 'ouː', 'au', 'ai', 'aː', 'auː',
+    'iː', 'eiː', 'ɪː', 'ɛː', 'θ', 'l̥', 'tʰ', 'uː', 'aiː',
+    'kʰ', 'u', 'ɔː', 'x', 'œː', 'œy', 'n̥', 'cʰ', 'œyː', 'pʰ',
+    'ɲ', 'ʏː', 'ç', 'ŋ̊', 'm̥', 'ʏi', 'ɲ̊', 'ɔi']
+
+DIPHONES = []
+with open(VALID_DIPHONES_PATH) as i_f:
+    for line in i_f:
+        p1, p2 = line.split('\t')
+        DIPHONES.append("".join([p1, p2.strip()]))
+
+for phone in PHONEMES:
+    DIPHONES.append("".join([phone, SIL_PHONE]))
+    DIPHONES.append("".join([SIL_PHONE, phone]))

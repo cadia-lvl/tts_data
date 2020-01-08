@@ -29,3 +29,8 @@ Install dependencies via `pip install -r requirements.txt`.
 * Create a directory `./data` and place the pronounciation dictionary there, e.g. `./data/prondict_ice.txt`. An Icelandic pronounciation dictionary is available (as of writing this) at `terra:/data/prondict_sr/v1/frambordabok_asr_v1.txt `
 * Run `python3 main.py` which will use default arguments. Look at the documented code to make changes to parameters.
 * Results will be default be placed under `./results/<experiment_name>` in the form of a torch state dictionary, `mdl.ckpt`. Currently logging is only in the form of printing using e.g. `print(...)`. To store logs run `python3 main.py > log.txt` to save the logs.
+
+# Licence
+Copyright (c) Atli Thor Sigurgeirsson <atlithors@ru.is>. All rights reserved
+
+Licensed under the [Apache 2.0](LICENSE) license.

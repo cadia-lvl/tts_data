@@ -1,3 +1,4 @@
+"""Sequitur G2P functions"""
 # -*- coding: utf-8 -*-
 #
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
@@ -20,18 +21,19 @@ import os
 import re
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
-
-from g2p import SequiturTool, Translator, loadG2PSample
 from tqdm import tqdm
 
-from conf import ICE_ALPHABET, SEQUITUR_MDL_PATH
+from g2p import SequiturTool, Translator, loadG2PSample
 
-sub_pattern = re.compile(r'[^{}]'.format(ICE_ALPHABET))
+from conf import ICE_ALPHABET, SEQUITUR_MDL_PATH, VARIANTS_MASS, VARIANTS_NUMBER
+
+SUB_PATTERN = re.compile(r'[^{}]'.format(ICE_ALPHABET))
 
 
 class Options(dict):
+    """Options class for sequitur.Translator"""
     def __init__(self, modelFile=SEQUITUR_MDL_PATH, encoding="UTF-8",
-                 variants_number=4, variants_mass=0.9):
+                 variants_number=VARIANTS_NUMBER, variants_mass=VARIANTS_MASS):
         super(Options, self).__init__(
             modelFile=modelFile, encoding=encoding,
             variants_number=variants_number,
@@ -113,7 +115,7 @@ def get_phones(token, translator, options):
     return phones
 
 
-def normalize_word(word, sub_pattern=sub_pattern):
+def normalize_word(word, sub_pattern=SUB_PATTERN):
     '''
     A normalization step used specifically for Sequitur.
     The word given as input is lowercased and any character

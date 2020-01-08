@@ -1,5 +1,7 @@
+"""A greedy algorithm that scores diphone dense highly in
+a large text corpus """
 # -*- coding: utf-8 -*-
-#
+
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,10 +21,11 @@ from collections import defaultdict
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
-from score import diphones
+from conf import DIPHONES
 
 
 def init(g2p_file, contains_scores=False):
+    """An initialization step for the greedy algorithm"""
     tokens, srcs, prons, diphones = [], [], [], []
     total_diphone_counts = {dp: 0 for dp in all_diphones}
     num_nonzero = 0
@@ -44,6 +47,7 @@ def init(g2p_file, contains_scores=False):
                     total_diphone_counts[dpkey(diphone)] += 1
                     valid.append(diphone)
                 except KeyError:
+                    print(diphone)
                     pass
             diphones.append(valid)
 
@@ -260,7 +264,7 @@ def greedy_score_file(
 
 
 if __name__ == '__main__':
-    all_diphones = diphones
+    all_diphones = DIPHONES
     tokens, srcs, prons, diphones, total_diphone_counts, num_nonzero = init(
-        'final_results/2.6_g2p.txt', contains_scores=False)
-    greedy_score_file('final_results/2.6_greedy_score.txt', '2.6.png')
+        'tests/unscored_list.txt', contains_scores=False)
+    greedy_score_file('test.txt', 'test.png')

@@ -1,5 +1,6 @@
+"""A prediction function for the PyTorch G2P model"""
 # -*- coding: utf-8 -*-
-#
+
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -18,9 +19,7 @@ import argparse
 import os
 
 import torch
-import torch.nn as nn
 
-from G2P import G2P
 from train import load_data, load_model
 
 
@@ -40,6 +39,7 @@ def predict(model, word: str, ds, device=torch.device('cpu')):
 
 
 def main():
+    """Argument parser for making G2P predictions"""
     parser = argparse.ArgumentParser()
     parser.add_argument(
         'pron_path', default='./data/prondict_ice.txt',

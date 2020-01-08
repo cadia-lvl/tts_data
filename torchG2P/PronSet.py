@@ -1,5 +1,6 @@
+"""A PyTorch dataset for the G2P module"""
 # -*- coding: utf-8 -*-
-#
+
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,18 +25,18 @@ from torch.utils.data import DataLoader, Dataset
 # TODO: MAKE THIS MORE ROBUST, this was initially created
 # using a torch text vocabulary.
 
-graphemes = [
+GRAPHEMES = [
     'a', 'n', 'r', 'i', 's', 'l', 'u', 't', 'e', 'g',
     'k', 'm', 'ð', 'f', 'd', 'v', 'ó', 'j', 'h', 'b', 'á',
     'o', 'ö', 'p', 'æ', 'y', 'í', 'ú', 'þ', 'é', 'ý', 'x',
     'z', 'c', 'w', 'q']
 
-grapheme_sos = '<s>'
-grapheme_pad = '<pad>'
-grapheme_unk = '<unk>'
-g_vocab = graphemes + [grapheme_sos, grapheme_pad, grapheme_unk]
+GRAPHEME_SOS = '<s>'
+GRAPHEME_PAD = '<pad>'
+GRAPHEME_UNK = '<unk>'
+G_VOCAB = GRAPHEMES + [GRAPHEME_SOS, GRAPHEME_PAD, GRAPHEME_UNK]
 
-phonemes = [
+PHONEMES = [
     'a', 'r', 't', 's', 'n', 'ɪ', 'l', 'ʏ', 'k', 'm',
     'ð', 'ɛ', 'v', 'p', 'h', 'f', 'j', 'c', 'i', 'ɔ', 'r̥',
     'ei', 'ŋ', 'ɣ', 'ou', 'œ', 'ouː', 'au', 'ai', 'aː', 'auː',
@@ -43,19 +44,20 @@ phonemes = [
     'kʰ', 'u', 'ɔː', 'x', 'œː', 'œy', 'n̥', 'cʰ', 'œyː', 'pʰ',
     'ɲ', 'ʏː', 'ç', 'ŋ̊', 'm̥', 'ʏi', 'ɲ̊', 'ɔi']
 
-phoneme_start = '<os>'
-phoneme_end = '</os>'
-phoneme_pad = '<pad>'
-phoneme_unk = '<unk>'
-phoneme_other = ['<unk>', '<pad>']
+PHONEME_START = '<os>'
+PHONEME_END = '</os>'
+PHONEME_PAD = '<pad>'
+PHONEME_UNK = '<unk>'
+PHONEME_OTHER = ['<unk>', '<pad>']
 
-p_vocab = [phoneme_unk, phoneme_pad, phoneme_start, phoneme_end] + phonemes
+P_VOCAB = [PHONEME_UNK, PHONEME_PAD, PHONEME_START, PHONEME_END] + PHONEMES
 
 
 class PronSet(Dataset):
+    """PyTorch Dataset for the G2P module"""
     def __init__(
-        self, graphemes, phonemes, g_vocab=g_vocab, p_vocab=p_vocab,
-            reverse_input=False, **kwargs):
+            self, graphemes, phonemes, g_vocab=G_VOCAB, p_vocab=P_VOCAB,
+            reverse_input=False):
         '''
         Input arguments:
         * graphemes (list): graphemes[i] is the list of graphemes of the i-th
@@ -84,6 +86,7 @@ class PronSet(Dataset):
         self.reverse_input = reverse_input
 
     def summary(self):
+        """Returns a summary of this dataset in text form"""
         return '''
         *********************************
         Num samples : {}
@@ -105,54 +108,60 @@ class PronSet(Dataset):
         if self.reverse_input:
             grapheme = grapheme[::-1]
         # apppend start-of-sentence-tokene
-        grapheme.insert(0, self.grapheme2idx[grapheme_sos])
+        grapheme.insert(0, self.grapheme2idx[GRAPHEME_SOS])
         return torch.Tensor(grapheme).to(dtype=torch.long)
 
     def tensor_to_grapheme(self, tensor):
-        '''
-        Input arguments:
-        * tensor (torch.Tensor): A
-        Returns
-        '''
+        """Converts a one-hot encoded tensor into a grapheme"""
         for i in range(tensor.shape[0]):
             print("".join(self.idx2grapheme[t.item()] for t in tensor[i, :]))
 
     def idxs_to_phonemes(self, idx_list):
+        """Converts a list of phoneme vocabulary index values into the
+        corresponding grapheme"""
         return " ".join(self.idx2phoneme[idx] for idx in idx_list)
 
     def grapheme_to_tensor(self, grapheme):
+        """Converts a grapheme into a one-hot encoded tensor"""
         grapheme = [self.grapheme2idx[g] for g in grapheme]
         return torch.Tensor(grapheme).to(dtype=torch.long)
 
     def get_phoneme(self, i: int):
-        '''
-        Input arguments:
-        * i (int):
-        '''
+        """Gets the i-th phoneme from the dataset"""
         phoneme = [self.phoneme2idx[p] for p in self.phonemes[i]]
         # apppend start and end tokens
-        phoneme.insert(0, self.phoneme2idx[phoneme_start])
-        phoneme.append(self.phoneme2idx[phoneme_end])
+        phoneme.insert(0, self.phoneme2idx[PHONEME_START])
+        phoneme.append(self.phoneme2idx[PHONEME_END])
 
         return torch.Tensor(phoneme).to(dtype=torch.long)
 
     @property
     def num_graphemes(self):
+        """Returns the number of graphemes in the grapheme vocabulary"""
         return len(self.g_vocab)
 
     @property
     def num_phonemes(self):
+        """Returns the number of phones in the phoneme vocabulary"""
         return len(self.p_vocab)
 
-    def split(self, train_r, val_r, test_r, shuffle=True):
+    def split(self, train_r: float, val_r: float, test_r: float, shuffle=True):
         '''
         Split the dataset into train/validation/test sets given
         the ratios
+
+        Input arguments:
+        * train_r (float): The ratio of the data that should be training data
+        * val_r (float): The ratio of the data that should be validation data
+        * test_r (float): The ratio of the data that should be test data
+        * shuffle (bool): If True, the data is shuffled before splitting
+
         '''
         assert train_r + val_r + test_r == 1, "Ratios must sum to one."
 
         data = list(zip(self.graphemes, self.phonemes))
-        random.shuffle(data)
+        if shuffle:
+            random.shuffle(data)
 
         train_g, train_p = zip(*data[0:int(len(data)*train_r)])
         val_g, val_p = zip(
@@ -171,31 +180,34 @@ class PronSet(Dataset):
                 reverse_input=self.reverse_input))
 
     def get_loader(
-        self, bz=32, shuffle=True, num_workers=1, pin_memory=True,
-            drop_last=True):
-        '''def make_dataset(path:str, g_vocab):
-
+            self, batch_size: int = 32, shuffle: bool = True, num_workers: int = 1,
+            pin_memory: bool = True, drop_last=True):
+        '''
         Return a dataloader for this dataset
         Input arguments:
-        * bz (int):
-        * shuffle ()
+        * batch_size (int): The batch size
+        * shuffle (bool): If True, the data is shuffled before batching
+        * num_workers (int): The number of dataloader workers
+        * pin_memory (bool): If True, memory for dataloader is pinned
+        * drop_last (bool): If True, the last batch is dropped if smaller
+        than batch_size
         '''
         def pad_collate(batch):
-            xx = [d['grapheme'] for d in batch]
-            yy = [d['phoneme'] for d in batch]
+            batch_in = [d['grapheme'] for d in batch]
+            batch_out = [d['phoneme'] for d in batch]
             xx_padded = pad_sequence(
-                xx, batch_first=True,
-                padding_value=self.grapheme2idx[grapheme_pad])
+                batch_in, batch_first=True,
+                padding_value=self.grapheme2idx[GRAPHEME_PAD])
             yy_padded = pad_sequence(
-                yy, batch_first=True,
-                padding_value=self.phoneme2idx[phoneme_pad])
+                batch_out, batch_first=True,
+                padding_value=self.phoneme2idx[PHONEME_PAD])
 
             return (
-                xx_padded, yy_padded, [len(x) for x in xx],
-                [len(y) for y in yy])
+                xx_padded, yy_padded, [len(x) for x in batch_in],
+                [len(y) for y in batch_out])
 
         return DataLoader(
-            self, batch_size=bz, shuffle=shuffle, num_workers=num_workers,
+            self, batch_size=batch_size, shuffle=shuffle, num_workers=num_workers,
             pin_memory=pin_memory, drop_last=drop_last, collate_fn=pad_collate)
 
     def __len__(self):
@@ -206,36 +218,42 @@ class PronSet(Dataset):
             'grapheme': self.get_grapheme(i), 'phoneme': self.get_phoneme(i)}
 
 
-def normalize_grapheme(s: str) -> str:
+def normalize_grapheme(grapheme: str) -> str:
     '''
+    Normalize a grapheme
+
     Input arguments:
-    * s (str)
+    * grapheme (str): The grapheme to normalize
     '''
-    s = s.lower().strip()  # lowercase and strip
-    s = re.sub(r'\s+', ' ', s)  # collapse whitespace
-    s = re.sub(r"[^{} ]".format(graphemes), '', s)
-    return s
+    grapheme = grapheme.lower().strip()  # lowercase and strip
+    grapheme = re.sub(r'\s+', ' ', grapheme)  # collapse whitespace
+    grapheme = re.sub(r"[^{} ]".format(GRAPHEMES), '', grapheme)
+    return grapheme
 
 
-def preprocess_phoneme(p: str) -> str:
+def preprocess_phoneme(phoneme: str) -> str:
     '''
+    Normalize a phoneme
+
     Input arguments:
-    * p (str)
+    * phoneme (str): The phoneme to normalize
     '''
     # we have to add 2 because of start ,end token padding
-    p = p.lower().strip()  # lowercase and strip
-    p = p.split()
-    return p
+    phoneme = phoneme.lower().strip()  # lowercase and strip
+    phoneme = phoneme.split()
+    return phoneme
 
 
 def extract_pron(
-        path, seperator='\t', normalize=True, g_ind=0, p_ind=1, **kwargs):
+        path: str, seperator: str = '\t', normalize: str = True,
+        g_ind: int = 0, p_ind: int = 1):
     '''
     Iterate a file where each line contains a grapheme and
     a corresponding phoneme and collects into a list of
     graphemes and phonemes.
 
     Input arguments:
+    * path (str): File path
     * seperator (str='\t')
     * normalize (bool=True)
     * g_ind (int=0)
@@ -248,9 +266,9 @@ def extract_pron(
     graphemes = []
     phonemes = []
 
-    with open(path, 'r') as f:
-        for line in f:
-            data = line.split('\t', maxsplit=1)
+    with open(path, 'r') as in_file:
+        for line in in_file:
+            data = line.split(seperator, maxsplit=1)
             graphemes.append(
                 list(normalize_grapheme(data[g_ind])) if normalize
                 else list(data[g_ind]))

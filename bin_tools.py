@@ -1,3 +1,5 @@
+"""Tools relevant to BIN"""
+
 # -*- coding: utf-8 -*-
 #
 # Copyright 2020 Cadia - Language and Voice Lab
@@ -20,10 +22,10 @@ import re
 
 from tqdm import tqdm
 
-from conf import ICE_ALPHABET, OTHER_CHARS
+from conf import ICE_ALPHABET, OTHER_CHARS, BIN_LIST_SORTED_PATH
 
-sub_pattern = re.compile(r'[^{}{}]'.format(ICE_ALPHABET, OTHER_CHARS))
-lookup_pattern = re.compile(r'[^{}]'.format(ICE_ALPHABET))
+SUB_PATTERN = re.compile(r'[^{}{}]'.format(ICE_ALPHABET, OTHER_CHARS))
+LOOKUP_PATTERN = re.compile(r'[^{}]'.format(ICE_ALPHABET))
 
 
 def bin2list(in_path: str, out_path: str):
@@ -63,7 +65,7 @@ def bin_verify(bin_path: str, in_path: str, out_path: str, bad_path: str):
             words = line.split('\t')[0].strip().lower().split()
             valid = True
             for word in words:
-                word = re.sub(sub_pattern, '', word)
+                word = re.sub(SUB_PATTERN, '', word)
                 i = bisect.bisect_left(bin_words, word)
                 if i == len(bin_words) or bin_words[i] != word:
                     # word not in BIN
@@ -75,27 +77,28 @@ def bin_verify(bin_path: str, in_path: str, out_path: str, bad_path: str):
 
 
 class BinVerifer:
-    def __init__(self, path: str = 'pron_data/bin_list_sorted.txt'):
+    """A class for verifying if sentences are in BIN"""
+    def __init__(self, path: str = BIN_LIST_SORTED_PATH):
         self.bin_words = []
         with open(path) as i_f:
             for line in i_f:
                 self.bin_words.append(line.strip())
 
     def in_bin(self, word: str):
-
         '''
         If a word contains any other characters then the icelandic
         alphabet or something in {'.', ','. ';'. '?'} we throw it
         out.
         '''
         word = word.lower()
-        if word != re.sub(sub_pattern, '', word):
+        if word != re.sub(SUB_PATTERN, '', word):
             return False
-        word = re.sub(lookup_pattern, '', word)
+        word = re.sub(LOOKUP_PATTERN, '', word)
         i = bisect.bisect_left(self.bin_words, word)
         return not (i == len(self.bin_words) or self.bin_words[i] != word)
 
     def check_utt(self, utt: str):
+        """Returns True if all words in the sentence are in BIN"""
         for word in utt.split():
             if not self.in_bin(word):
                 # word not in BIN

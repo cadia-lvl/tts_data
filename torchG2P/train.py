@@ -1,5 +1,6 @@
+"""A training scheme for the PyTorch G2P model"""
 # -*- coding: utf-8 -*-
-#
+
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -16,23 +17,24 @@
 
 import argparse
 import os
-import time
 from typing import List
 
 import Levenshtein
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-from torch.nn.utils import clip_grad_norm
 
 from G2P import G2P
 from PronSet import PronSet, extract_pron
+from conf import PRONDICT_IPA_PATH
 
 
-def load_data(path: str, splits: List[float], **kwargs):
+def load_data(
+        path: str = PRONDICT_IPA_PATH,
+        splits: List[float] = [0.7, 0.2, 0.1], **kwargs):
     '''
     Input arguments:
+    * path (str): A path to a pronounciation dictionary
     * splits (List[float]): The ratios for train/validation/test
     sets to use from the complete dataset
 
@@ -43,9 +45,9 @@ def load_data(path: str, splits: List[float], **kwargs):
     * **kwargs: Any number of additional keyword arguments passed to
     PronSet.PronSet or PronSet.extract_pron
     '''
-    graphemes, phonemes = extract_pron('./data/prondict_ice.txt', **kwargs)
-    ds = PronSet(graphemes, phonemes, **kwargs)
-    return ds, ds.split(*splits)
+    graphemes, phonemes = extract_pron(path, **kwargs)
+    dataset = PronSet(graphemes, phonemes, **kwargs)
+    return dataset, dataset.split(*splits)
 
 
 def load_model(
@@ -74,8 +76,7 @@ def load_model(
 
 def train(
         model: G2P, train_ds: PronSet, val_ds: PronSet, ckp_path: str,
-        epochs: int = 10, log_step: int = 100, device=torch.device('cpu'),
-        **kwargs):
+        epochs: int = 10, log_step: int = 100, device=torch.device('cpu')):
     '''
     Input arguments:
     * model (G2P): A G2P instance
@@ -85,7 +86,7 @@ def train(
     * epoch (int): The number of epochs to train
     * log_step (int): The interval of logging during training
     '''
-    dl = train_ds.get_loader()
+    dataloader = train_ds.get_loader()
     criterion = nn.NLLLoss()  # TODO: add to parameters
     optimizer = optim.Adam(model.parameters())
 
@@ -96,7 +97,7 @@ def train(
     print("Starting training.")
     for epoch in range(epochs):
         print("Epoch {} / {}".format(epoch+1, epochs))
-        for idx, batch in enumerate(dl):
+        for idx, batch in enumerate(dataloader):
             output, _, _ = model(
                 batch[0].to(device), batch[1][:, :-1].detach().to(device),
                 device=device)
@@ -120,7 +121,7 @@ def train(
                 val_loss = validate(model, val_ds, criterion, device=device)
                 print(
                     "Batch: {}/{} | Train loss: {:.4f} | Val loss: {:.4f}"
-                    .format(idx, len(dl), train_loss, val_loss))
+                    .format(idx, len(dataloader), train_loss, val_loss))
 
                 n_total = train_loss = 0  # reset to zero
 
@@ -131,8 +132,7 @@ def train(
 
 
 def validate(
-        model: G2P, val_ds: PronSet, criterion, device=torch.device('cpu'),
-        **kwargs):
+        model: G2P, val_ds: PronSet, criterion, device=torch.device('cpu')):
     '''
     Input arguments:
     * model (G2P): A G2P instance
@@ -144,12 +144,11 @@ def validate(
     The validation loss
     '''
     val_loss = 0
-    dl = val_ds.get_loader(bz=1)
-    val_len = len(dl)
+    dataloader = val_ds.get_loader(bz=1)
 
     model.eval()
     print("Starting Evaluation")
-    for idx, batch in enumerate(dl):
+    for _, batch in enumerate(dataloader):
         output, _, _ = model(
             batch[0].to(device), batch[1][:, :-1].to(device),
             device=device)
@@ -157,10 +156,18 @@ def validate(
         loss = criterion(output.squeeze(0), target.squeeze(0))
         val_loss += loss.item() * batch[0].shape[0]
     model.train()
-    return val_loss / len(dl)
+    return val_loss / len(dataloader)
 
 
-def test(model, test_ds, device=torch.device('cpu'), **kwargs):
+def test(model, test_ds: PronSet, device=torch.device('cpu')):
+    '''
+    Input arguments:
+    * model (G2P): A G2P instance
+    * test_ds (PronSet): The test dataset
+
+    Returns:
+    The test loss
+    '''
     def phoneme_error_rate(p_seq1, p_seq2):
         p_vocab = set(p_seq1 + p_seq2)
         p2c = dict(zip(p_vocab, range(len(p_vocab))))
@@ -170,8 +177,8 @@ def test(model, test_ds, device=torch.device('cpu'), **kwargs):
                                     ''.join(c_seq2)) / len(c_seq2)
 
     test_per = test_wer = 0
-    dl = test_ds.get_loader(bz=1)
-    for idx, batch in enumerate(dl):
+    dataloader = test_ds.get_loader(bz=1)
+    for _, batch in enumerate(dataloader):
         output = model(batch[0].to(device), device=device).tolist()
         target = batch[1][:, 1:].to(device).squeeze(0).tolist()
         # calculate per, wer here
@@ -180,13 +187,14 @@ def test(model, test_ds, device=torch.device('cpu'), **kwargs):
         test_per += per  # batch_size = 1
         test_wer += wer
 
-    test_per = test_per / len(dl) * 100
-    test_wer = test_wer / len(dl) * 100
+    test_per = test_per / len(dataloader) * 100
+    test_wer = test_wer / len(dataloader) * 100
     print("Phoneme error rate (PER): {:.2f}\nWord error rate (WER): {:.2f}"
           .format(test_per, test_wer))
 
 
 def main():
+    '''Argument parser for training'''
     parser = argparse.ArgumentParser()
     parser.add_argument(
         'pron_path', default='./data/prondict_ice.txt', nargs='?')
@@ -218,7 +226,6 @@ def main():
     # Make sure directories exist
     exp_dir = os.path.join(args.result_dir, args.exp_name)
     ckp_path = os.path.join(exp_dir, 'mdl.ckpt')
-    log_path = os.path.join(exp_dir, 'run.log')  # TODO: not used currently
     if not os.path.exists(exp_dir):
         os.makedirs(exp_dir)
 

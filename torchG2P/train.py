@@ -24,8 +24,8 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 
-from G2P import G2P
-from PronSet import PronSet, extract_pron
+from g2p import G2P
+from pronset import PronSet, extract_pron
 from conf import PRONDICT_IPA_PATH
 
 
@@ -87,7 +87,7 @@ def train(
     * log_step (int): The interval of logging during training
     '''
     dataloader = train_ds.get_loader()
-    criterion = nn.NLLLoss()  # TODO: add to parameters
+    criterion = nn.NLLLoss()
     optimizer = optim.Adam(model.parameters())
 
     n_total = 0  # number of samples
@@ -107,7 +107,7 @@ def train(
                 target.contiguous().view(target.shape[0] * target.shape[1]))
             optimizer.zero_grad()
             loss.backward()
-            # TODO: add to params
+
             torch.nn.utils.clip_grad_norm_(model.parameters(), 2.3, 'inf')
             optimizer.step()
 

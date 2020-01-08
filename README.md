@@ -7,8 +7,8 @@ This file contains both class-based and function-based python-sequitur buindings
 ##  `x2i_tools.py`
 This file contains multiple methods for easily mapping between XSAMPA and IPA and is highly coupled to the work that was performed.
 
-## `token_tools.py`
-This file contains methods for parsing and normalizing text tokens from the following datasets:
+## `utt_tools.py`
+This file contains methods for parsing and normalizing text utterances from the following datasets:
 * ivona
 * Gullstadall
 * The Hljodbokasafn TTS dataset
@@ -17,7 +17,7 @@ This file contains methods for parsing and normalizing text tokens from the foll
 ## `score.py`
 This file contains method for ordering a collection of tokens by a heuristic that should increase diphone coverage. This is still a work in progress.
 
-## `PronData.py`
+## `prondata.py`
 This file contains many methods that can be used for analyzing diphones in the set, coverage, missing diphones and more.
 
 ## `torchG2P/` : A Sequence-2-sequence neural G2P model in PyTorch

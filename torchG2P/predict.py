@@ -23,18 +23,17 @@ import torch
 from train import load_data, load_model
 
 
-def predict(model, word: str, ds, device=torch.device('cpu')):
-    # TODO remove the PronSet dependency
+def predict(model, word: str, dataset, device=torch.device('cpu')):
     '''
     Input arguments:
     * model (G2P): A G2P instance, preferably pretrained
     * word (str): A single word with spaces or special tokens
-    * ds (PronSet): A PronSet instance
+    * dataset (PronSet): A PronSet instance
     '''
 
-    word_tensor = ds.grapheme_to_tensor(word).unsqueeze(dim=0)
+    word_tensor = dataset.grapheme_to_tensor(word).unsqueeze(dim=0)
     output = model(word_tensor.to(device), device=device).tolist()
-    phoneme = ds.idxs_to_phonemes(output)
+    phoneme = dataset.idxs_to_phonemes(output)
     print(phoneme)
 
 

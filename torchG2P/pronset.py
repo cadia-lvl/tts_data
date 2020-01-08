@@ -22,9 +22,6 @@ import torch
 from torch.nn.utils.rnn import pad_sequence
 from torch.utils.data import DataLoader, Dataset
 
-# TODO: MAKE THIS MORE ROBUST, this was initially created
-# using a torch text vocabulary.
-
 GRAPHEMES = [
     'a', 'n', 'r', 'i', 's', 'l', 'u', 't', 'e', 'g',
     'k', 'm', 'ð', 'f', 'd', 'v', 'ó', 'j', 'h', 'b', 'á',
@@ -94,8 +91,6 @@ class PronSet(Dataset):
         '''.format(len(self.graphemes))
 
     def get_grapheme(self, i: int):
-        # TODO : refactor this method and others to e.g. `get_word()`
-        # to avoid confusion
         '''
         Input arguments:
         * i (int): The index of the grapheme to fetch

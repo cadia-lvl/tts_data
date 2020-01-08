@@ -34,7 +34,7 @@ from conf import ICE_ALPHABET, MAX_WORDS, MIN_WORDS, OTHER_CHARS
 def gs_to_files(src_dir: str, out_dir: str):
     '''
     Given the directory of the GullStadall dataset, this
-    function will convert tokens to the standard format
+    function will convert utterances to the standard format
     used in this project. The output will be stored under
     out_dir. Data from each subdirectory from Gullstadall
     will be stored together in a .txt file with the same
@@ -53,25 +53,25 @@ def gs_to_files(src_dir: str, out_dir: str):
         if os.path.isfile(os.path.join(src_dir, fname)):
             with open(os.path.join(src_dir, fname), 'r') as i_f,\
                     open(os.path.join(out_dir, fname), 'w') as o_f:
-                token, idx = '', 0
+                utt, idx = '', 0
                 for line in i_f:
                     if not line.strip():
                         # new sentence
-                        o_f.write('{}\n'.format(token))
-                        token, idx = '', 0
+                        o_f.write('{}\n'.format(utt))
+                        utt, idx = '', 0
                     else:
                         word, _ = line.split('\t')
                         if word in OTHER_CHARS or idx == 0:
-                            token += word
+                            utt += word
                         else:
-                            token += ' {}'.format(word)
+                            utt += ' {}'.format(word)
                         idx += 1
 
 
 def hlbs_to_files(src_dir: str, out_dir: str):
     '''
     Given the directory of the Hljodbokasafn dataset, this
-    function will convert tokens to the standard format
+    function will convert utterances to the standard format
     used in this project. The output will be stored under
     out_dir. Data from each subdirectory from Hljodbokasafn
     will be stored together in a .txt file with the same
@@ -101,7 +101,7 @@ def hlbs_to_files(src_dir: str, out_dir: str):
 def ivona_to_file(src_dir: str, out_path: str):
     '''
     Given the directory of the Ivona dataset, this
-    function will convert tokens to the standard format
+    function will convert utterances to the standard format
     used in this project. The output will be stored in
     a single .txt file at out_path
 
@@ -122,7 +122,7 @@ def malromur_to_file(
         column='corrected_prompt'):
     '''
     Given a path the sqlite dump of the Malromur dataset,
-    this function will convert tokens to the standard format
+    this function will convert utterances to the standard format
     used in this project. The output will be stored in
     a single .txt file at out_path
 
@@ -133,7 +133,7 @@ def malromur_to_file(
     * table_name (str): The name of the data table in the
     sqlite dump
     * column (str): The column from <table_name> that contains
-    the token.
+    the utterance.
     '''
     try:
         conn = sqlite3.connect(db_path)
@@ -214,12 +214,12 @@ def rmh_parser(src_dir: str, out_dir: str):
                 o_f.write(f'{sent}\t{source}\n')
 
 
-def tokens_to_file(src_dir: str, out_path: str):
+def utts_to_file(src_dir: str, out_path: str):
     '''
     Given a directory containing possibly many .txt files
     as well as subdirectories containing more .txt files of
-    tokens in the standard format, create a single token file
-    from all found .txt files.
+    utterances in the standard format, create a single utterance
+    file from all found .txt files.
 
     Input arguments:
     src_dir (str): The directory containing all dataset sources
@@ -229,11 +229,11 @@ def tokens_to_file(src_dir: str, out_path: str):
     '''
     with open(out_path, 'w') as o_f:
         for path in tqdm(os.listdir(src_dir)):
-            tok_path = os.path.join(src_dir, path)
-            if os.path.isdir(tok_path):
+            utt_path = os.path.join(src_dir, path)
+            if os.path.isdir(utt_path):
                 # Handle directories
-                for subpath in os.listdir(tok_path):
-                    file_path = os.path.join(tok_path, subpath)
+                for subpath in os.listdir(utt_path):
+                    file_path = os.path.join(utt_path, subpath)
                     if os.path.isfile(file_path):
                         with open(file_path, 'r') as i_f:
                             for line in i_f:
@@ -241,7 +241,7 @@ def tokens_to_file(src_dir: str, out_path: str):
                                     line.strip(), path, Path(subpath).stem))
             else:
                 # Handle single files
-                with open(tok_path, 'r') as i_f:
+                with open(utt_path, 'r') as i_f:
                     for line in i_f:
                         o_f.write('{}\t{}\n'.format(
                             line.strip(), Path(path).stem))
@@ -288,33 +288,33 @@ def preprocess(
             open(bad_path, 'w') as b_f:
         for line in tqdm(i_f, total=num_lines):
             if contains_pron:
-                token, src, *_ = line.split('\t')
+                utt, src, *_ = line.split('\t')
             else:
-                token, src = line.split('\t')
+                utt, src = line.split('\t')
                 src = src.strip()
             # check if too short
-            if (min_char_length and len(token) < min_char_length)\
-            or (min_word_length and len(token.split()) < min_word_length):
-                b_f.write('{}\t{}\t{}\n'.format(token, src, 'SHORT'))
+            if (min_char_length and len(utt) < min_char_length)\
+            or (min_word_length and len(utt.split()) < min_word_length):
+                b_f.write('{}\t{}\t{}\n'.format(utt, src, 'SHORT'))
             # check if too long
-            elif (max_char_length and len(token) > max_char_length)\
-            or (max_word_length and len(token.split()) > max_word_length):
-                b_f.write('{}\t{}\t{}\n'.format(token, src, 'LONG'))
+            elif (max_char_length and len(utt) > max_char_length)\
+            or (max_word_length and len(utt.split()) > max_word_length):
+                b_f.write('{}\t{}\t{}\n'.format(utt, src, 'LONG'))
             # check if starts with a capital letter
-            elif token[0] not in ICE_ALPHABET.upper():
-                b_f.write('{}\t{}\t{}\n'.format(token, src, 'CAPITAL'))
+            elif utt[0] not in ICE_ALPHABET.upper():
+                b_f.write('{}\t{}\t{}\n'.format(utt, src, 'CAPITAL'))
             # check if any character not in deny_pattern
-            elif bool(deny_pattern(token)):
-                b_f.write('{}\t{}\t{}\n'.format(token, src, 'ILLEGAL'))
+            elif bool(deny_pattern(utt)):
+                b_f.write('{}\t{}\t{}\n'.format(utt, src, 'ILLEGAL'))
             # check if "." is anywhere in sentence except at the end
-            elif token.find('.') not in [-1, len(token) - 1]:
-                b_f.write('{}\t{}\t{}\n'.format(token, src, 'PUNC'))
+            elif utt.find('.') not in [-1, len(utt) - 1]:
+                b_f.write('{}\t{}\t{}\n'.format(utt, src, 'PUNC'))
             # check if it contains either „ or “ without the other
-            elif ('„' in token and '“' not in token)\
-            or ('„' not in token and '“' in token):
-                b_f.write('{}\t{}\t{}\n'.format(token, src, 'GOOSE'))
+            elif ('„' in utt and '“' not in utt)\
+            or ('„' not in utt and '“' in utt):
+                b_f.write('{}\t{}\t{}\n'.format(utt, src, 'GOOSE'))
             # lastly check if in BIN
-            elif not bin_ver.check_utt(token):
-                b_f.write('{}\t{}\t{}\n'.format(token, src, 'BIN'))
+            elif not bin_ver.check_utt(utt):
+                b_f.write('{}\t{}\t{}\n'.format(utt, src, 'BIN'))
             else:
                 o_f.write(line)

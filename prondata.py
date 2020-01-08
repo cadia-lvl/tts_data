@@ -16,6 +16,7 @@ used in this work."""
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+import os
 import operator
 import pickle
 from collections import defaultdict
@@ -33,12 +34,12 @@ class PronData:
     used in this work.
     """
     def __init__(
-            self, src_path: str, needed_dps=None, all_phones=PHONEMES+SIL_PHONE,
+            self, src_path: str, needed_dps=None, all_phones=PHONEMES+[SIL_PHONE],
             all_diphones=DIPHONES, contains_scores=False, num_needed=DIPHONES_NEEDED):
         '''
         Input arguments:
         * src_path (str): A path to a G2P output file where each line
-        contains a token and a pronounciation
+        contains an utterance and a pronounciation
         * needed_dps = (list/None = None): A list of diphones that are
         needed that potentially exist in this dataset. This is only relevant
         for self.export_needed_from_ids() and self.collect_needed_diphones()
@@ -52,8 +53,9 @@ class PronData:
         finding dihpones missing in other PronData sets. It is important only to
         self.export_needed_from_ids() and self.collect_needed_diphones()
         '''
+        self.name = os.path.splitext(os.path.basename(src_path))[0]
         self.contains_scores = contains_scores
-        self.tokens, self.srcs, self.scrs, self.prons, self.diphones,\
+        self.utts, self.srcs, self.scrs, self.prons, self.diphones,\
             self.lines = [], [], [], [], [], []
         self.all_diphones = all_diphones
         self.all_phones = all_phones
@@ -72,11 +74,11 @@ class PronData:
             for _, line in tqdm(enumerate(g2p_file)):
                 self.lines.append(line)
                 if contains_scores:
-                    token, src, scr, *phone_strings = line.split('\t')[0:]
+                    utt, src, scr, *phone_strings = line.split('\t')[0:]
                     self.scrs.append(scr)
                 else:
-                    token, src, *phone_strings = line.split('\t')[0:]
-                self.tokens.append(token)
+                    utt, src, *phone_strings = line.split('\t')[0:]
+                self.utts.append(utt)
                 self.srcs.append(src)
                 self.prons.append(phone_strings)
                 phones = self.sentence_2_phones(phone_strings)
@@ -108,13 +110,13 @@ class PronData:
         '''
         Returns the number of samples in this set
         '''
-        return len(self.tokens)
+        return len(self.utts)
 
     def get_utt(self, i: int):
         '''
         Returns the i-th utterance
         '''
-        return self.tokens[i]
+        return self.utts[i]
 
     def get_src(self, i: int):
         '''
@@ -182,7 +184,7 @@ class PronData:
     def sentence_2_diphones(self, ph_strings: list):
         '''
         This achieves the same as word_2_diphones but on the
-        token level, meaning that between-word-diphones are
+        utterance level, meaning that between-word-diphones are
         counted as well.
 
         Input arguments:
@@ -205,7 +207,7 @@ class PronData:
         '''
         return self.word_2_phones(' '.join(ph_strings))
 
-    def coverage(self, dp_dict=None, n_needed=1):
+    def coverage(self, dp_dict=None, num_needed=DIPHONES_NEEDED):
         '''
         Returns the ratio of the number of covered diphones
         to the number of total diphones
@@ -214,16 +216,16 @@ class PronData:
         * dp_dict (dict or None): A dictionary where each key
         is a dihpone and each value is the number of occurrences.
         If dp_dict is none, self.dihpone_counts is usd
-        * n_needed (int=1): A user chosen value, determining how
-        many occurrences of each diphone is needed to fullfill 100%
-        coverage.
+        * num_needed (int=conf.DIPHONES_NEEDED): A user chosen value,
+        determining how many occurrences of each diphone is needed to
+        fullfill 100% coverage.
         '''
         if dp_dict is None:
             dp_dict = self.diphone_counts
 
         total = 0.0
         for diphone in self.all_diphones:
-            total += min(dp_dict[diphone], n_needed)/n_needed
+            total += min(dp_dict[diphone], num_needed)/num_needed
         return total/len(self.all_diphones)
 
     def missing_diphones(self, pd_path=None):
@@ -372,3 +374,125 @@ class PronData:
             k: v for k, v in self.diphone_counts.items() if v < num_needed}
         with open(out_path, 'wb') as handle:
             pickle.dump(needed, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    def score_dict(self, diphones: dict, utt_len: int):
+        """
+        A convenience method used in self.score
+
+        Input arguments:
+        * diphones (dict): A dictionary where each key is
+        a diphone key as defined by self.dpkey()
+        * utt_len (int): The length in characters of the sentence
+        currently being considered.
+        """
+        score = 0.0
+        for diphone_key, _ in diphones.items():
+            score += 1.0/self.diphone_counts[diphone_key]
+        score *= 1/utt_len
+        return score
+
+    def score(
+            self, out_path: str, added_dp_counts: dict = None,
+            num_needed: int = DIPHONES_NEEDED, score_all: bool = True,
+            covplot_path: str = None):
+        '''
+        Greedy scoring algorithm to maximize total diphone coverage
+        while minimizing sentence length.
+
+        Input arguments:
+        * out_path (str): Path for the output file generated by this method
+        * added_dp_counts: (dict/None): If appending to another already scorede
+        list, the diphone frequencies can be imported here as a {diphone: #}
+        dictionary.
+        * num_needed (int=conf.DIPHONES_NEEDED): The number needed of each
+        diphone type to qualify for 100% coverage
+        * score_all (bool=True): If False, the algorithm quits when maximum
+        coverage has been reached w.r.t. the num_needed argument.
+        * covplot_path (str/None): The path for the coverage plot generated
+        by this method. If None, this defaults to <self.name>.png
+        '''
+
+        o_f = open(out_path, 'w')
+
+        added, scores, unchanged, covs, greedy_covs = [], [], [], [], []
+        diphone_counts = {dp: 0 for dp in self.all_diphones}
+
+        if added_dp_counts is not None:
+            for diphone, num in added_dp_counts.items():
+                diphone_counts[diphone] += num
+                self.diphone_counts[diphone] += num
+        not_needed = {}
+        for diphone, num in diphone_counts.items():
+            if num >= num_needed:
+                not_needed[diphone] = True
+        for i in range(len(self)):
+            scores.append({
+                'utt': self.get_utt(i),
+                'src': self.get_src(i),
+                'pron': self.get_pron(i),
+                'dp_table': defaultdict(int),
+                'scr': -1})
+            for diphone in self.get_diphones(i):
+                if self.dpkey(diphone) not in not_needed:
+                    scores[-1]['dp_table'][self.dpkey(diphone)] += 1
+
+        greedy_covs.append(self.greedy_coverage(
+            diphone_counts, num_needed=num_needed))
+        pbar = tqdm(range(len(self)))
+        for _ in pbar:
+            pbar.set_description(f"{greedy_covs[-1]}")
+            # calculate the scores
+            best, best_i = -1, -1
+            for i, val in enumerate(scores):
+                score_i = self.score_dict(val['dp_table'], len(val['utt']))
+                val['scr'] = score_i
+                if score_i > best:
+                    best, best_i = score_i, i
+            for i, val in enumerate(unchanged):
+                score_i = val['scr']
+                if score_i > best:
+                    best, best_i = score_i, i+len(scores)
+            scores += unchanged
+            unchanged = []
+
+            # remove the best and add to the list
+            new = scores.pop(best_i)
+            for diphone, num in new['dp_table'].items():
+                diphone_counts[diphone] += num
+            added.append(new)
+            o_f.write('{}\t{}\t{}\t{}\n'.format(
+                added[-1]['utt'], added[-1]['src'],
+                added[-1]['scr'], '\t'.join(p.strip() for p in added[-1]['pron'])))
+
+            # remove the newly added diphones from all other elements
+            dps_to_remove = [
+                d for d in new['dp_table'] if
+                diphone_counts[d] > min(num_needed, diphone_counts[d])]
+
+            j = 0
+            while j < len(scores):
+                # only remove those diphones that occur min(5, num_in_corpus)
+                # in the added set
+                dp_table = scores[j]['dp_table']
+                for dp in dps_to_remove:
+                    scores[j]['dp_table'].pop(dp, None)
+                if len(scores[j]['dp_table']) == len(dp_table):
+                    unchanged.append(scores.pop(j))
+                j += 1
+
+            covs.append(self.coverage(diphone_counts, num_needed=num_needed))
+            greedy_covs.append(self.greedy_coverage(
+                diphone_counts, num_needed=num_needed))
+            if not score_all and greedy_covs[-1] >= 1:
+                print("Reached full greedy coverage, quitting")
+                break
+        plt.plot(covs, c='b')
+        plt.plot(greedy_covs, c='r')
+        plt.show()
+        if covplot_path is None:
+            covplot_path = f"{self.name}.png"
+        plt.savefig(covplot_path)
+
+if __name__ == '__main__':
+    pd = PronData('tests/medium_unscored.txt')
+    pd.score('test3.txt', 'test3.png')

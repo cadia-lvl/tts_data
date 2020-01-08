@@ -474,8 +474,8 @@ class PronData:
                 # only remove those diphones that occur min(5, num_in_corpus)
                 # in the added set
                 dp_table = scores[j]['dp_table']
-                for dp in dps_to_remove:
-                    scores[j]['dp_table'].pop(dp, None)
+                for diphone in dps_to_remove:
+                    scores[j]['dp_table'].pop(diphone, None)
                 if len(scores[j]['dp_table']) == len(dp_table):
                     unchanged.append(scores.pop(j))
                 j += 1

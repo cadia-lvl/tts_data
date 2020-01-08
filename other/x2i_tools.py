@@ -1,3 +1,6 @@
+"""XSAMPA to IPA converter and other related functions"""
+# -*- coding: utf-8 -*-
+
 # Copyright 2020 Atli Thor Sigurgeirsson <atlithors@ru.is>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -36,16 +39,16 @@ def x2i_diphones(
     xs2ipa = {}
     with open(i2x_path) as m_f:
         for line in m_f:
-            ps = line.split('\t')
-            i, x = ps[ipa_ind], ps[xsampa_ind]
-            xs2ipa[x.strip()] = i.strip()
+            phones = line.split('\t')
+            ipa_symbol, xsampa_symbol = phones[ipa_ind], phones[xsampa_ind]
+            xs2ipa[xsampa_symbol.strip()] = ipa_symbol.strip()
 
     with open(xdp_path) as i_f, open(out_path, 'w') as o_f:
         for line in i_f:
-            p1, p2 = line.split(' ')
-            if '_' not in (p1.strip(), p2.strip()):
+            phone_1, phone_2 = line.split(' ')
+            if '_' not in (phone_1.strip(), phone_2.strip()):
                 o_f.write("{}\t{}\n".format(
-                    xs2ipa[p1.strip()], xs2ipa[p2.strip()]))
+                    xs2ipa[phone_1.strip()], xs2ipa[phone_2.strip()]))
 
 
 def x2i_map(
@@ -65,9 +68,9 @@ def x2i_map(
     xs2ipa = {}
     with open(i2x_path) as m_f:
         for line in m_f:
-            ps = line.split('\t')
-            i, x = ps[ipa_ind], ps[xsampa_ind]
-            xs2ipa[x.strip()] = i.strip()
+            phone_symbols = line.split('\t')
+            ipa_symbol, xsampa_symbol = phone_symbols[ipa_ind], phone_symbols[xsampa_ind]
+            xs2ipa[xsampa_symbol.strip()] = ipa_symbol.strip()
     return xs2ipa
 
 
@@ -87,8 +90,8 @@ def x2i_prondict(src_path: str, out_path: str, xs2ipa: dict = None):
         xs2ipa = x2i_map()
     with open(src_path) as i_f, open(out_path, 'w') as o_f:
         for line in i_f:
-            w, pron = line.split('\t')
-            o_f.write("{}\t{}\n".format(w, xs2ipa_str(pron, xs2ipa)))
+            word, pron = line.split('\t')
+            o_f.write("{}\t{}\n".format(word, xs2ipa_str(pron, xs2ipa)))
 
 
 def xs2ipa_str(xs_string: str, xs2ipa: dict):

@@ -1,3 +1,6 @@
+"""XML parser for RMH"""
+# -*- coding: utf-8 -*-
+
 # Copyright 2015, 2018 Róbert Kjaran <robert@kjaran.com>
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
@@ -41,18 +44,19 @@ def parse(fobj):
     """Parse TEI XML file, and print out sentences"""
     root = ET.parse(fobj).getroot()
     sentences = []
-    for p in root.findall(
+    for paragraph in root.findall(
             './/a:body//a:p', {'a': 'http://www.tei-c.org/ns/1.0'}):
-        for s in p.findall('.//a:s', {'a': 'http://www.tei-c.org/ns/1.0'}):
-            sent = to_sentence(s)
+        for sentence in paragraph.findall('.//a:s', {'a': 'http://www.tei-c.org/ns/1.0'}):
+            sentence = to_sentence(sentence)
 
-            senlen = len(sent.split())
-            if MIN_WORDS <= senlen <= MAX_WORDS:
-                sentences.append(sent)
+            sen_len = len(sentence.split())
+            if MIN_WORDS <= sen_len <= MAX_WORDS:
+                sentences.append(sentence)
     return sentences
 
 
 def main():
+    """Argument parser for the XML parser"""
     parser = argparse.ArgumentParser(
         description="""Parse sentences from Icelandic Tagged Corpus
         (MÍM) TEI XML files""",
@@ -88,7 +92,3 @@ def main():
             for line in ins:
                 with open(line.strip(), 'r') as fobj:
                     parse(fobj)
-
-
-if __name__ == '__main__':
-    main()

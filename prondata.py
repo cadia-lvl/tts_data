@@ -34,8 +34,10 @@ class PronData:
     used in this work.
     """
     def __init__(
-            self, src_path: str, needed_dps=None, all_phones=PHONEMES+[SIL_PHONE],
-            all_diphones=DIPHONES, contains_scores=False, num_needed=DIPHONES_NEEDED):
+            self, src_path: str, needed_dps: dict = None,
+            all_phones: list = PHONEMES+[SIL_PHONE],
+            all_diphones: list = DIPHONES, contains_scores: bool = False,
+            num_needed: int = DIPHONES_NEEDED):
         '''
         Input arguments:
         * src_path (str): A path to a G2P output file where each line
@@ -493,6 +495,3 @@ class PronData:
             covplot_path = f"{self.name}.png"
         plt.savefig(covplot_path)
 
-if __name__ == '__main__':
-    pd = PronData('tests/medium_unscored.txt')
-    pd.score('test3.txt', 'test3.png')

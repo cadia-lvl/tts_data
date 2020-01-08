@@ -1,0 +1,70 @@
+Tinna Rut og Leó Örn.	morgunbladid	0.39908054696384215	~ tʰ ɪ n a	r ʏː t	ɔː ɣ	l ɛː ou	œ r t n̥ ~
+Þau hlupu í ofboði yfir lík.	ruv	0.39007833902791883	~ θ œyː	l̥ ʏː p ʏ	iː	ɔ v p ɔ ð ɪ	ɪː v ɪ r	l iː k ~
+Þrjú kíló af nýjum fiski.	silfuregils	0.35427341177341165	~ θ r j uː	cʰ iː l ou	aː v	n iː j ʏ m	f ɪ s c ɪ ~
+Oftast eru þau hnéhá eða tæplega það.	wikipedia	0.3480914492756598	~ ɔ f t a s t	ɛː r ʏ	θ œyː	n̥ j ɛː h au	ɛː ð a	tʰ aiː p l ɛ ɣ a	θ aː ð ~
+Útsmoginn píanókennarinn sá við hrútnum.	from_rare	0.33331492294835496	~ uː t s m ɔi j ɪ n	pʰ iː j a n ou c ɛ n a r ɪ n	s au	v ɪː ð	r̥ u h t n ʏ m ~
+Hefur þú komið til Túvalúeyjar?	from_rare	0.3332374799838648	~ h ɛː v ʏ r	θ uː	kʰ ɔː m ɪ ð	tʰ ɪː l	tʰ uː v aː l u ei j a r ~
+Nú standa allir í röð, fólk með pinkla og pjönkur.	morgunbladid	0.32893334762709026	~ n uː	s t a n t a	a t l ɪ r	iː	r œː ð	f ou l̥ k	m ɛː ð	pʰ i ŋ h k l a	ɔː ɣ	pʰ j œy ŋ̊ k ʏ r ~
+Svo hefði Tanya komið og þau farið.	domstolar	0.3254890231954851	~ s v ɔː	h ɛ v ð ɪ	tʰ au n̥ ɪː a	kʰ ɔː m ɪ ð	ɔː ɣ	θ œyː	f aː r ɪ ð ~
+Slíkt próf kemur á markað á morgun.	visir	0.2970728404053527	~ s t l i x t	pʰ r ouː f	cʰ ɛː m ʏ r	auː	m a r̥ k a ð	auː	m ɔ r k ʏ n ~
+Í Hnífsdal fauk íbúðarhús á haf út.	ruv	0.2946677423105994	~ iː	n̥ i f s t a l	f œyː k	iː p u ð a r h uː s	auː	h aː v	uː t ~
+Sigurhjörtur átti sjö systkini, en tvö þeirra, Jósef Pálmar og Auður, létust í æsku.	morgunbladid	0.2930425856124627	~ s ɪː ɣ ʏ r ç œ r̥ t ʏ r	au h t ɪ	s j œː	s ɪ s c ɪ n ɪ	ɛ n	tʰ v œː	θ ei r a	j ouː s ɛ f	pʰ au l m a r	ɔː ɣ	œyː ð ʏ r	l j ɛ t ʏ s t	iː	ai s k ʏ ~
+Það er því mikilvægt, að olíuinnkaup séu sem hagkvæmust.	althingi	0.2930370076352219	~ θ aː ð	ɛ r	θ v iː	m ɪː c ɪ l v ai x t	aː ð	ɔː l i j ʏː i ŋ̊ k œy p	s j ɛː ʏ	s ɛː m	h a ɣ k v ai m ʏ s t ~
+Mammon vor er alhreinn orðinn	althingi	0.28743266359632325	~ m a m ɔ n	v ɔː r	ɛ r	aː l̥ r̥ ei t n̥	ɔ r ð ɪ n ~
+Og þó hló enginn maður.	althingi	0.2834154209065437	~ ɔː ɣ	θ ouː	l̥ ouː	ei ɲ c ɪ n	m aː ð ʏ r ~
+Nú sé allt komið í hönk.	sjonvarpid	0.27859623015873014	~ n uː	s j ɛː	a l̥ t	kʰ ɔː m ɪ ð	iː	h œy n̥ k ~
+Fulltrúar dansa trúardans og fara með ritúöl.	from_rare	0.27566522808180877	~ f ʏ t l̥ t r u a r	t a n s a	tʰ r uː a r t a n s	ɔː ɣ	f aː r a	m ɛː ð	r ɪː t u œː l ~
+Þetta gæti lifað sko kjarnorkustyrjöld þessi pakkning.	stod2	0.2734003658057295	~ θ ɛ h t a	c aiː t ɪ	l ɪː v a ð	s k ɔ	cʰ a r t n ɔ r̥ k ʏ s t ɪ r j œ l t	θ ɛ s ɪ	pʰ a h k n i ŋ k ~
+Hér er allt í hönk!	from_rare	0.2680678970152654	~ ç ɛː r	ɛ r	a l̥ t	iː	h œy n̥ k ~
+Skirrst er við að taka börn af heimili fyrr en í lengstu lög.	althingi	0.26748903191526147	~ s c ɪː r̥ s t	ɛ r	v ɪː ð	aː ð	tʰ aː k a	p œ t n̥	aː v	h eiː m ɪ l ɪ	f ɪ r	ɛ n	iː	l ei ŋ s t ʏ	l œː ɣ ~
+Þorbjörn Tómasson, íbúi við Kársnesbraut í Kópavogi, spyr: „Oj bara, finnst þér ekki vond lykt hérna?“.	stod2	0.2645086971528187	~ θ ɔ r p j œ t n̥	tʰ ouː m a s ɔː n	iː p u ɪ	v ɪː ð	kʰ au r̥ s t n ɛ s p r œyː t	iː	kʰ ouː p a v ɔi j ɪ	s p ɪː r	ɔ j	p aː r a	f ɪ n s t	θ j ɛː r	ɛ h c ɪ	v ɔ n t	l ɪ x t	ç ɛ t n a ~
+Bættu góðri fitu í matinn; örlítil lárpera, fræ, hnetur eða góð ólífuolía.	visir	0.26434981698505494	~ p ai h t ʏ	k ou ð r ɪ	f ɪː t ʏ	iː	m aː t ɪ n	œ r l i t ɪ l	l auː r p ɛ r a	f r aiː	n̥ ɛː t ʏ r	ɛː ð a	k ouː ð	ouː l i v ʏ ɔː l i j a ~
+Leki kom að hitaveituæð í Garðabæ nú síðdegis.	ruv	0.263922017998105	~ l ɛː c ɪ	kʰ ɔː m	aː ð	h ɪː t a v eiː t u aiː ð	iː	k a r ð a p aiː	n uː	s i ð t ei j ɪ s ~
+Thomas hefði ekki séð hana eftir að Nikolaj hvarf á braut í bílnum.	ruv	0.25561285458236827	~ t ɔ m a s	h ɛ v ð ɪ	ɛ h c ɪ	s j ɛː ð	h aː n a	ɛ f t ɪ r	aː ð	n ɪː k ɔ l ai j	kʰ v a r v	auː	p r œy t	iː	p i l n ʏ m ~
+Tríó Árna Ísleifs leikur undir.	wikipedia	0.25368140597748995	~ tʰ r iː j ou	au r t n a	iː s t l ei f s	l eiː k ʏ r	ʏ n t ɪ r ~
+Te veskú eins og skot.	morgunbladid	0.25360354885755954	~ tʰ ɛː	v ɛː s k u	ei n s	ɔː ɣ	s k ɔː t ~
+Þannig að hann slær út bæði sko, Árna Sigfússon og Lúðvík Geirsson.	sjonvarpid	0.25197431547218485	~ θ a n ɪ ɣ	aː ð	h a n	s t l aiː r	uː t	p aiː ð ɪ	s k ɔ	au r t n a	s ɪ x f u s ɔː n	ɔː ɣ	l u ð v i k	c ei r̥ s ɔː n ~
+Þeir búa að sínum mikla olíuauði.	silfuregils	0.2515120368507177	~ θ eiː r	p uː a	aː ð	s iː n ʏ m	m ɪ h k l a	ɔː l i j ʏː œy ð ɪ ~
+Þeir séu önugir og pirraðir.	ruv	0.2455156100901899	~ θ eiː r	s j ɛː ʏ	œː n ʏi j ɪ r	ɔː ɣ	pʰ ɪ r a ð ɪ r ~
+Sigríður þurfti að segja upp Gunnari, Gjúki og Svandísi til að láta dæmið ganga upp.	from_rare	0.2385462059982825	~ s ɪ ɣ r i ð ʏ r	θ ʏ r̥ t ɪ	aː ð	s ei j a	ʏ h p	k ʏ n a r ɪ	c uː c ɪ	ɔː ɣ	s v a n t i s ɪ	tʰ ɪː l	aː ð	l auː t a	t aiː m ɪ ð	k au ŋ k a	ʏ h p ~
+Sigríður Eygló ólst upp í Vík í Mýrdal.	morgunbladid	0.23694795756687884	~ s ɪ ɣ r i ð ʏ r	ei k l ou	ou l s t	ʏ h p	iː	v iː k	iː	m iː r t a l ~
+Loksins er komin lausn fyrir þurrkuntur og kynkaldar teprur þessa heims.	visir	0.2352443499946554	~ l ɔ k s ɪ n s	ɛ r	kʰ ɔː m ɪ n	l œy s t n̥	f ɪː r ɪ r	θ ʏ r̥ k ʏ n̥ t ʏ r	ɔː ɣ	cʰ ɪ ŋ̊ kʰ a l t a r	tʰ ɛː p r ʏ r	θ ɛ s a	h ei m s ~
+Hún hafði fundið fyrir þunglyndi og kynkulda, glímdi við ofþyngd og fleira.	ruv	0.23346287122998363	~ h uː n	h a v ð ɪ	f ʏ n t ɪ ð	f ɪː r ɪ r	θ u ŋ k l ɪ n t ɪ	ɔː ɣ	cʰ ɪ ŋ̊ kʰ ʏ l t a	k l i m t ɪ	v ɪː ð	ɔ f θ i ŋ t	ɔː ɣ	f l eiː r a ~
+Framangreindur Kaj bar að hafa verið með Daníel og Kristófer í bílskúrnum heima hjá sér.	domstolar	0.2324361847590631	~ f r aː m a n k r ei n t ʏ r	kʰ aː j	p aː r	aː ð	h aː v a	v ɛː r ɪ ð	m ɛː ð	t aː n i j ɛ l	ɔː ɣ	kʰ r ɪ s t ou f ɛ r	iː	p i l s k u r t n ʏ m	h eiː m a	ç au	s j ɛː r ~
+Vasinn fannst þegar systkini gerðu upp dánarbú ættingja sinna í úthverfi Lundúna.	ruv	0.22775994398609473	~ v aː s ɪ n	f a n s t	θ ɛː ɣ a r	s ɪ s c ɪ n ɪ	c ɛ r ð ʏ	ʏ h p	t auː n a r p u	ai h t i ɲ c a	s ɪ n a	iː	u t k v ɛ r v ɪ	l ʏ n t u n a ~
+Kristján endurtekur: „Sem miðstöð altso innanlandsflugs“.	sjonvarpid	0.22605102411022165	~ kʰ r ɪ s t j au n	ɛ n t ʏ r tʰ ɛː k ʏ r	s ɛː m	m ɪ ð s t œ ð	a l̥ t s ɔ	ɪ n a n l a n t s f l ʏ x s ~
+Eftir það veitti ákærði Hákoni tvö hnefahögg í andlitið.	domstolar	0.22279406004454355	~ ɛ f t ɪ r	θ aː ð	v ei h t ɪ	auː c ai r ð ɪ	h auː k ɔ n ɪ	tʰ v œː	n̥ ɛː v a h œ k	iː	a n t l ɪ t ɪ ð ~
+Afar þekkt þema í fornsögum og nægir að benda á hræðileg örlög Ödipusar sem dæmi.	morgunbladid	0.21980551363859432	~ aː v a r	θ ɛ x t	θ ɛː m a	iː	f ɔ r t n̥ s œ ɣ ʏ m	ɔː ɣ	n ai j ɪ r	aː ð	p ɛ n t a	auː	r̥ aiː ð ɪ l ɛ ɣ	œ r l œ ɣ	œ ɪː p ʏ s a r	s ɛː m	t aiː m ɪ ~
+Sko, ætli aðalástæðan sé ekki sú, í fyrsta lagi er Júpíter rosalega stór.	stod2	0.21830723002220942	~ s k ɔ	ai h t l ɪ	aː ð a l au s t ai ð a n	s j ɛː	ɛ h c ɪ	s uː	iː	f ɪ r̥ s t a	l ai j ɪ	ɛ r	j uː p i t ɛ r	r ɔː s a l ɛ ɣ a	s t ouː r ~
+Sögnin „að stjónka“ í fyrstu persónu viðtengingarhætti, fleirtölu er „stjónkuðum“.	bin_extract	0.2154673918066599	~ s œ k n ɪ n	aː ð	s t j ou ŋ̊ k a	iː	f ɪ r̥ s t ʏ	pʰ ɛ r̥ s ou n ʏ	v ɪ ð t ei ɲ c i ŋ k a r h ai h t ɪ	f l ei r̥ t œ l ʏ	ɛ r	s t j ou ŋ̊ k ʏ ð ʏ m ~
+Í bæ hnútanna býr gömul kona sem þekkir til allra í næstu bæjum.	from_rare	0.21258766550743088	~ iː	p aiː	n̥ uː t a n a	p iː r	k œː m ʏ l	kʰ ɔː n a	s ɛː m	θ ɛ h c ɪ r	tʰ ɪː l	a t l̥ r a	iː	n ai s t ʏ	p aiː j ʏ m ~
+Ung íslensk kona varð þrettán milljónum ríkari í Lottó úrdrættinum um síðustu helgi.	visir	0.20851052002168016	~ u ŋ k	i s t l ɛ n s k	kʰ ɔː n a	v a r ð	θ r ɛ h t au n	m ɪ l j ou n ʏ m	r iː k a r ɪ	iː	l ɔ h t ou	u r t r ai h t ɪ n ʏ m	ʏ m	s iː ð ʏ s t ʏ	h ɛ l c ɪ ~
+Beötu hafði aldrei fundist Bersabesynir sérstaklega skemmtilegir.	from_rare	0.20219879145345895	~ p ɛ œː t ʏ	h a v ð ɪ	a l t r ei	f ʏ n t ɪ s t	p ɛ r̥ s a p ɛ ɪː n ɪ r	s j ɛ r̥ s t a k l ɛ ɣ a	s c ɛ m̥ t ɪ l ɛ j ɪ r ~
+Já, ég var sko öfunduð af þessari góðu ömmu á þessum árum.	morgunbladid	0.19945696140256525	~ j auː	j ɛː ɣ	v aː r	s k ɔ	œː v ʏ n t ʏ ð	aː v	θ ɛ s a r ɪ	k ouː ð ʏ	œ m ʏ	auː	θ ɛ s ʏ m	auː r ʏ m ~
+Saman unnu þeir til sjö Óskarsverðlauna.	morgunbladid	0.19667604139197728	~ s aː m a n	ʏ n ʏ	θ eiː r	tʰ ɪː l	s j œː	ou s k a r̥ s v ɛ r ð l œy n a ~
+Og þar af leiðandi er sko óvissuástandið líka.	ras1_og_2	0.1943755931608769	~ ɔː ɣ	θ aː r	aː v	l eiː ð a n t ɪ	ɛ r	s k ɔ	ouː v ɪ s ʏ auː s t a n t ɪ ð	l iː k a ~
+Marinó átti son fyrir hjónaband.	morgunbladid	0.193124757775076	~ m aː r ɪ n ou	au h t ɪ	s ɔː n	f ɪː r ɪ r	ç ouː n a p a n t ~
+Ég bjó í miðbæ Prag fyrir nokkrum árum.	morgunbladid	0.1930079445884043	~ j ɛː ɣ	p j ouː	iː	m ɪ ð p ai	pʰ r aː ɣ	f ɪː r ɪ r	n ɔ h k r ʏ m	auː r ʏ m ~
+Í ákæru er á því byggt að um tvö hnefahögg hafi verið að ræða.	domstolar	0.1922533726830167	~ iː	auː c ai r ʏ	ɛ r	auː	θ v iː	p ɪ x t	aː ð	ʏ m	tʰ v œː	n̥ ɛː v a h œ k	h aː v ɪ	v ɛː r ɪ ð	aː ð	r aiː ð a ~
+Ödipus var borinn út en bjargað af fjárhirðum og ættleiddur.	morgunbladid	0.18996395059310967	~ œ ɪː p ʏ s	v aː r	p ɔː r ɪ n	uː t	ɛ n	p j a r k a ð	aː v	f j auː r h ɪ r ð ʏ m	ɔː ɣ	ai h t l ei t ʏ r ~
+Hversu háa skál vil ég? Nú, ég vil alveg bolháa skál.	bin_extract	0.18615995198666502	~ kʰ v ɛ r̥ s ʏ	h auː a	s k auː l	v ɪː l	j ɛː ɣ	n uː	j ɛː ɣ	v ɪː l	a l v ɛ ɣ	p ɔ au a	s k auː l ~
+Yngri pilturinn lést af sárum sínum, en hann hlaut alls sjö hnífsstungur.	visir	0.1851581147153735	~ i ŋ k r ɪ	pʰ ɪ l̥ t ʏ r ɪ n	l j ɛ s t	aː v	s auː r ʏ m	s iː n ʏ m	ɛ n	h a n	l̥ œyː t	a l s	s j œː	n̥ i f s t u ŋ k ʏ r ~
+Spauggreindin breyttist þannig að skopskynið varð svartara og jafnvel óskiljanlegt.	ruv	0.17699459591053418	~ s p œy j k r ei n t ɪ n	p r ei h t ɪ s t	θ a n ɪ ɣ	aː ð	s k ɔː p s c ɪ n ɪ ð	v a r ð	s v a r̥ t a r a	ɔː ɣ	j a p v ɛ l	ouː s c ɪ l j a n l ɛ x t ~
+Fyrir dóminum kvað Kaj framburð sinn fyrir lögreglu ósannan.	domstolar	0.17419658440610428	~ f ɪː r ɪ r	t ouː m ɪ n ʏ m	kʰ v aː ð	kʰ aː j	f r a m p ʏ r ð	s ɪ n	f ɪː r ɪ r	l œ ɣ r ɛ k l ʏ	ouː s a n a n ~
+EmJ benti á blessun stjórnarfarsins undanfarin ár.	althingi	0.1736097238713764	~ ɛ m j	p ɛ n̥ t ɪ	auː	p l ɛ s ʏ n	s t j ou r t n a r f a r̥ s ɪ n s	ʏ n t a n f aː r ɪ n	auː r ~
+Hún miðaði að því að gera Nikolaj grunsamlegan og ábyrgan fyrir morðinu á Birnu.	ruv	0.17201927515720283	~ h uː n	m ɪː ð a ð ɪ	aː ð	θ v iː	aː ð	c ɛː r a	n ɪː k ɔ l ai j	k r ʏ n s a m l ɛ ɣ a n	ɔː ɣ	auː p ɪ r k a n	f ɪː r ɪ r	m ɔ r ð ɪ n ʏ	auː	p ɪ r t n ʏ ~
+Sem og að sko, eiga samtal við hið alþjóðlega umhverfi.	sjonvarpid	0.16972113567807345	~ s ɛː m	ɔː ɣ	aː ð	s k ɔ	eiː ɣ a	s a m t a l	v ɪː ð	h ɪː ð	a l θ j ou ð l ɛ ɣ a	ʏ m k v ɛ r v ɪ ~
+Margir tónlistarunnendur bíða spenntir eftir endurkomu þessarar hráu og pönkuðu rokksveitar.	visir	0.16884680329420343	~ m a r c ɪ r	tʰ ou n l ɪ s t a r ʏ n ɛ n t ʏ r	p iː ð a	s p ɛ n̥ t ɪ r	ɛ f t ɪ r	ɛ n t ʏ r k ɔ m ʏ	θ ɛ s a r a r	r̥ auː ʏ	ɔː ɣ	pʰ œy ŋ̊ k ʏ ð ʏ	r ɔ h k s v ei t a r ~
+Konsertinum er lýst sem virtúósaverki sem leggi margar þrautir fyrir einleikarann.	morgunbladid	0.1650255388508617	~ kʰ ɔ n s ɛ r̥ t ɪ n ʏ m	ɛ r	l i s t	s ɛː m	v ɪ r̥ t u ou s a v ɛ r̥ c ɪ	s ɛː m	l ɛ c ɪ	m a r k a r	θ r œyː t ɪ r	f ɪː r ɪ r	ei n l ei k a r a n ~
+Þeir Nikolaj hafi síðan ekið að Hafnarfjarðarhöfn, þar hafi Nikolaj farið um borð.	ruv	0.1647035833823738	~ θ eiː r	n ɪː k ɔ l ai j	h aː v ɪ	s iː ð a n	ɛː c ɪ ð	aː ð	h a p n a r f j a r ð a r h œ p n̥	θ aː r	h aː v ɪ	n ɪː k ɔ l ai j	f aː r ɪ ð	ʏ m	p ɔ r ð ~
+Þeir einu sem hafi tekið þátt í barsmíðum hafi verið Kaj og Smári.	domstolar	0.15785534624234554	~ θ eiː r	eiː n ʏ	s ɛː m	h aː v ɪ	tʰ ɛː c ɪ ð	θ au h t	iː	p a r̥ s m i ð ʏ m	h aː v ɪ	v ɛː r ɪ ð	kʰ aː j	ɔː ɣ	s m auː r ɪ ~
+Hann hafi verið með Kaj vini sínum og rætt við Annþór.	domstolar	0.15614746002531232	~ h a n	h aː v ɪ	v ɛː r ɪ ð	m ɛː ð	kʰ aː j	v ɪː n ɪ	s iː n ʏ m	ɔː ɣ	r ai h t	v ɪː ð	a n θ ou r ~
+Þannig að hann er greinilega sko orðinn nokkuð útbreiddur þótt lítið sé af honum.	ras1_og_2	0.15485518967153336	~ θ a n ɪ ɣ	aː ð	h a n	ɛ r	k r eiː n ɪ l ɛ ɣ a	s k ɔ	ɔ r ð ɪ n	n ɔ h k ʏ ð	uː t p r ei t ʏ r	θ ou h t	l iː t ɪ ð	s j ɛː	aː v	h ɔː n ʏ m ~
+En það er ekki ykkar niðurstaða, þetta sé fyrst og fremst, sko, íslenskt hrun?	stod2	0.15030895035604697	~ ɛ n	θ aː ð	ɛ r	ɛ h c ɪ	ɪ h k a r	n ɪː ð ʏ r s t aː ð a	θ ɛ h t a	s j ɛː	f ɪ r̥ s t	ɔː ɣ	f r ɛ m s t	s k ɔ	i s t l ɛ n s t	r̥ ʏ n ~
+Ég fæ hnút í magann yfir því að það á að styrkja byggð á Austurlandi.	althingi	0.14698327035283557	~ j ɛː ɣ	f aiː	n̥ uː t	iː	m aː ɣ a n	ɪː v ɪ r	θ v iː	aː ð	θ aː ð	auː	aː ð	s t ɪ r̥ c a	p ɪ ɣ ð	auː	œy s t ʏ r l a n t ɪ ~
+Það er kannske auðveldasta lausnin.	althingi	0.14280782414793908	~ θ aː ð	ɛ r	kʰ a n s c ɛ	œy ð v ɛ l t a s t a	l œy s t n ɪ n ~
+Fékk eina góða, sko, eina stökka, sko.	stod2	0.13701831484786442	~ f j ɛ h k	eiː n a	k ouː ð a	s k ɔ	eiː n a	s t œ h k a	s k ɔ ~
+Ég veit ekkert um það en, en það er eiginlega sko, aukaatriði í þessu.	sjonvarpid	0.136055701387413	~ j ɛː ɣ	v eiː t	ɛ h c ɛ r̥ t	ʏ m	θ aː ð	ɛ n	ɛ n	θ aː ð	ɛ r	ei j ɪ n l ɛ ɣ a	s k ɔ	œyː k a a t r ɪ ð ɪ	iː	θ ɛ s ʏ ~
+Hann hefur ekki skirrst við að fara í hana.	althingi	0.13396273146020363	~ h a n	h ɛː v ʏ r	ɛ h c ɪ	s c ɪː r̥ s t	v ɪː ð	aː ð	f aː r a	iː	h aː n a ~
+Þannig að þetta endurspeglar í rauninni sko aukin lífaldur þjóðarinnar.	stod2	0.13271128158484333	~ θ a n ɪ ɣ	aː ð	θ ɛ h t a	ɛ n t ʏ r s p ei k l a r	iː	r œyː n ɪ n ɪ	s k ɔ	œyː c ɪ n	l i f a l t ʏ r	θ j ouː ð a r ɪ n a r ~
+Sko, innstu blöðin, það eru bestu blöðin.	stod2	0.09274828219931293	~ s k ɔ	ɪ n s t ʏ	p l œ ð ɪ n	θ aː ð	ɛː r ʏ	p ɛ s t ʏ	p l œ ð ɪ n ~

@@ -4,13 +4,17 @@ checkpoints/
 results/
 log.txt
 pron_data/processed_tokens
+tests/output/
 *.png
 
 # development stuff
 env/
+.vscode/
+
+# python stuff
 __pycache__/
 .mypy_cache/
-.vscode/
+tts_data.egg-info/
 
 # Terra stuff
 *.out

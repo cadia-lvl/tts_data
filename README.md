@@ -1,34 +1,27 @@
-# Tools for generating TTS datasets with good diphone coverage for the Icelandic language.
-This repository is mixed with both multiple G2P models as well as text parsers / normalize steps / phonetic stuff and more. Here is a brief introduction of the more notable stuff.
+# Module for preparing text data for TTS data collections, specifically for the Icelandic language.
 
-## `sequitur_tools.py`
-This file contains both class-based and function-based python-sequitur buindings and more.
+## Installation
+The code should be mostly supported by any Python 3.* but Python 3.6 or higher is recommended. Install dependencies by simply running `pip install -r requirements.txt`
 
-##  `x2i_tools.py`
-This file contains multiple methods for easily mapping between XSAMPA and IPA and is highly coupled to the work that was performed.
+## Introduction
+The code includes methods helpful for all major steps in the text collection side of TTS data collecting:
+1. Gathering data: [`utt_tools.py`](utt_tools.py) contains methods for parsing utterances from some of the open Icelandic text datasets.
+2. Preprocessing: A preprprocessing routine is also found in [`utt_tools.py`](utt_tools.py), designed specifically for these datasets.
+3. Grapheme-to-Phoneme prediction: A Sequitur wrapper is found in [`sequitur_tools.py`](sequitur_tools.py). A pretrained model file is also included in this repository under [`pron_data`](pron_data). The model path is configured in [`conf.py`](conf.py).
+4. Scoring: [`prondata.py`](prondata.py) contains a large class, `PronData.py`. It has multiple methods that can prove convenient to others but most important is `Prondata.score()` which scores the utterances based on length and diphone density.
 
-## `utt_tools.py`
-This file contains methods for parsing and normalizing text utterances from the following datasets:
-* ivona
-* Gullstadall
-* The Hljodbokasafn TTS dataset
-* Malromur
 
-## `score.py`
-This file contains method for ordering a collection of utterances by a heuristic that should increase diphone coverage. This is still a work in progress.
-
-## `prondata.py`
-This file contains many methods that can be used for analyzing diphones in the set, coverage, missing diphones and more.
-
-## `torchG2P/` : A Sequence-2-sequence neural G2P model in PyTorch
-### Setup
-Install dependencies via `pip install -r requirements.txt`.
-
-### Easily run the G2P model
+## The PyTorch G2P model
 * Make sure dependencies are installed
 * Create a directory `./data` and place the pronounciation dictionary there, e.g. `./data/prondict_ice.txt`. An Icelandic pronounciation dictionary is available (as of writing this) at `terra:/data/prondict_sr/v1/frambordabok_asr_v1.txt `
 * Run `python3 main.py` which will use default arguments. Look at the documented code to make changes to parameters.
 * Results will be default be placed under `./results/<experiment_name>` in the form of a torch state dictionary, `mdl.ckpt`. Currently logging is only in the form of printing using e.g. `print(...)`. To store logs run `python3 main.py > log.txt` to save the logs.
+
+## Testing
+Simple tests are found in [`tests.py`](tests/tests.py) which additionally demonstrate some of the main operations in this module.
+
+## Reading lists
+Under [`reading_lists`](reading_lists) are 4 reading lists, varying in length. [`rl_full.txt`](reading_lists/rl_full.txt) contains a very high diphone coverage, containing almost 20 instances of every valid Icelandic diphone.
 
 # Licence
 Copyright (c) Atli Thor Sigurgeirsson <atlithors@ru.is>. All rights reserved

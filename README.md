@@ -11,12 +11,6 @@ The code includes methods helpful for all major steps in the text collection sid
 4. Scoring: [`prondata.py`](prondata.py) contains a large class, `PronData.py`. It has multiple methods that can prove convenient to others but most important is `Prondata.score()` which scores the utterances based on length and diphone density.
 
 
-## The PyTorch G2P model
-* Make sure dependencies are installed
-* Create a directory `./data` and place the pronounciation dictionary there, e.g. `./data/prondict_ice.txt`. An Icelandic pronounciation dictionary is available (as of writing this) at `terra:/data/prondict_sr/v1/frambordabok_asr_v1.txt `
-* Run `python3 main.py` which will use default arguments. Look at the documented code to make changes to parameters.
-* Results will be default be placed under `./results/<experiment_name>` in the form of a torch state dictionary, `mdl.ckpt`. Currently logging is only in the form of printing using e.g. `print(...)`. To store logs run `python3 main.py > log.txt` to save the logs.
-
 ## Testing
 Simple tests are found in [`tests.py`](tests/tests.py) which additionally demonstrate some of the main operations in this module.
 

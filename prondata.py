@@ -659,13 +659,13 @@ class Speaker:
     def num_utts(self):
         return len(self.utts)
 
-def compare_scripts(in_dir):
-    for f in os.listdir(in_dir):
-        p = PronData(os.path.join(in_dir, f), contains_scores=True)
-        print(p.coverage(num_needed=3))
 
-
-
-if __name__ == '__main__':
-    m = MultiSpeakerPron('./reading_lists/rl_full.txt', './multi/', 40, 100)
-    #compare_scripts('./multi/')
+def compare_scripts(in_dir, num_speakers=40, needed_max=10):
+    results = [[] for i in range(num_speakers)]
+    for needed in tqdm(range(1, needed_max + 1)):
+        for idx, f in enumerate(os.listdir(in_dir)):
+            p = PronData(os.path.join(in_dir, f), contains_scores=True)
+            results[idx].append(p.coverage(num_needed=needed))
+    for res in results:
+        plt.plot(res)
+    plt.show()

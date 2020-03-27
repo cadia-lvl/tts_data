@@ -5,7 +5,6 @@ results/
 log.txt
 pron_data/processed_tokens
 tests/output/
-multi/
 processed/
 *.png
 

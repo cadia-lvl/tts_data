@@ -25,7 +25,7 @@ from functools import partial
 from pathlib import Path
 from tqdm import tqdm
 
-from misc.xml_tools import parse
+from other.xml_tools import parse
 
 from bin_tools import BinVerifer
 from conf import ICE_ALPHABET, MAX_WORDS, MIN_WORDS, OTHER_CHARS
@@ -318,3 +318,14 @@ def preprocess(
                 b_f.write('{}\t{}\t{}\n'.format(utt, src, 'BIN'))
             else:
                 o_f.write(line)
+
+def post_process(in_path:str, out_path:str):
+    accepted = {}
+    with open(in_path) as i_f:
+        for line in i_f:
+            utt, src = line.strip().split('\t')
+            if utt not in accepted:
+                accepted[utt] = src
+    with open(out_path, 'w') as o_f:
+        for utt, src in accepted.items():
+            o_f.write(f'{utt}\t{src}\n')

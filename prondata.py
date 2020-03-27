@@ -495,3 +495,177 @@ class PronData:
             covplot_path = f"{self.name}.png"
         plt.savefig(covplot_path)
 
+def word_2_diphones(phone_string: str):
+    '''
+    A string of space seperated phones phonetically
+    representing a single word, e.g. for the original word
+    "mig" the phone_string is "m ɪː ɣ". This will then
+    return the list [("m", "ɪː"), ("ɪː", "ɣ")]
+
+    This function will return the empty list if the phone_string
+    includes only a single phone.
+
+    Input arguments:
+    * phone_string (str): An IPA space seperated phone string
+    for a single word.
+    '''
+    phones = phone_string.split()
+    return [(phones[i], phones[i+1]) for i in range(len(phones) - 1)]
+
+def sentence_2_diphones(ph_strings: list):
+    '''
+    This achieves the same as word_2_diphones but on the
+    utterance level, meaning that between-word-diphones are
+    counted as well.
+
+    Input arguments:
+    * ph_strings: A list of IPA space seperated phone strings,
+    each one corresponding to a single word.
+    '''
+    return word_2_diphones(' '.join(ph_strings))
+
+def dpkey(diphone):
+    '''
+    The standard dictionary key of a diphone is the
+    concatenation of the two phones.
+
+    Input arguments:
+    * diphone (iterable): contains the two phones.
+    '''
+    return "".join(diphone)
+
+
+
+class MultiSpeakerPron:
+    def __init__(self, sorted_path:str, out_dir:str, num_speakers:int, num_same:int = 0,
+        all_diphones: list = DIPHONES):
+        '''
+        Generate a number of reading lists from a pre-generated
+        single speaker reading list. If num_same > 0 then the first
+        num_same sentences will be in each reading list.
+
+        Input arguments:
+        * sorted_path (str): A path to a prondata .txt output file
+        containing a sorted list of sentences
+        * num_speakers (int): The number of speakers in the multi-speaker
+        dataset
+        * num_same (int): How many of the first sentences should be common
+        for all speakers
+        '''
+        self.sorted_path = sorted_path
+        self.out_dir = out_dir
+        self.num_speakers = num_speakers
+        self.num_same = num_same
+        self.diphone_counts = {dp: 0 for dp in all_diphones}
+        self.verbose = False
+
+        # set up data
+        self.utts = self.setup_utts()
+        # set up speakers
+        self.speakers = self.setup_speakers()
+        # start algo
+        self.add_utts_to_speakers()
+        self.generate_scripts()
+
+    def setup_utts(self):
+        utts = []
+        with open(self.sorted_path, 'r') as f:
+            for _, line in tqdm(enumerate(f)):
+                txt, src, scr, *phone_strings = line.strip().split('\t')[0:]
+                diphones = sentence_2_diphones(phone_strings)
+                utts.append(Utt(txt, phone_strings, src, scr))
+                for diphone in diphones:
+                    try:
+                        self.diphone_counts[dpkey(diphone)] += 1
+                        utts[-1].add_diphone(dpkey(diphone))
+                    except KeyError:
+                        if self.verbose:
+                            print(f'{dpkey(diphone)} is an invalid diphone')
+        return utts
+
+    def setup_speakers(self):
+        speakers = [Speaker() for _ in range(self.num_speakers)]
+        # add the first num_same sentences to each
+        for speaker in speakers:
+            for i in range(self.num_same):
+                speaker.add_utt(self.utts[i])
+
+        return speakers
+
+    def add_utts_to_speakers(self):
+        while len(self.utts) > 0:
+            best_score = -1
+            best_speaker = None
+            for idx, speaker in enumerate(self.speakers):
+                score = speaker.score_utt(self.utts[0])
+                if score > best_score:
+                    best_score = score
+                    best_speaker = speaker
+                elif score == best_score and speaker.num_utts < best_speaker.num_utts:
+                    best_speaker = speaker
+            best_speaker.add_utt(self.utts[0])
+            del self.utts[0]
+
+        for idx, speaker in enumerate(self.speakers):
+            print(f'{idx} - {speaker.num_utts}')
+
+    def generate_scripts(self):
+        if not os.path.exists(self.out_dir):
+            os.mkdir(self.out_dir)
+        for idx, speaker in enumerate(self.speakers):
+            with open(os.path.join(self.out_dir, f'speaker_{idx+1}.txt'), 'w') as f:
+                for utt in speaker.utts:
+                    f.write(f'{utt.get_line()}\n')
+
+class Utt:
+    def __init__(self, text:str, phone_strings: str, src:str, scr:float):
+        self.text = text
+        self.phone_strings = phone_strings
+        self.diphones = defaultdict(int)
+        self.src = src
+        self.scr = scr
+
+    def add_diphone(self, dp):
+        self.diphones[dp] += 1
+
+    def get_line(self):
+        return '\t'.join([self.text, self.src, self.scr, *self.phone_strings])
+
+    def get_diphones(self):
+        return self.diphones.items()
+
+class Speaker:
+    def __init__(self):
+        self.diphones = defaultdict(int)
+        self.utts = []
+
+    def score_utt(self, utt):
+        '''
+        '''
+        score = 0
+        for diphone, num in utt.get_diphones():
+            score += self.score_diphone(diphone, num)
+        return score / self.num_utts**2
+
+    def score_diphone(self, dp, num):
+        return max(0, num - self.diphones[dp])**2
+
+    def add_utt(self, utt):
+        self.utts.append(utt)
+        for diphone, num in utt.get_diphones():
+            self.diphones[diphone] += num
+
+    @property
+    def num_utts(self):
+        return len(self.utts)
+
+def compare_scripts(in_dir):
+    for f in os.listdir(in_dir):
+        p = PronData(os.path.join(in_dir, f), contains_scores=True)
+        print(p.coverage(num_needed=3))
+
+
+
+if __name__ == '__main__':
+    m = MultiSpeakerPron('./reading_lists/rl_full.txt', './multi/', 40, 100)
+    #compare_scripts('./multi/')

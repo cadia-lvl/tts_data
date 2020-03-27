@@ -82,7 +82,8 @@ class BinVerifer:
         self.bin_words = []
         with open(path) as i_f:
             for line in i_f:
-                self.bin_words.append(line.strip())
+                word = line.strip()
+                self.bin_words.append(word)
 
     def in_bin(self, word: str):
         '''

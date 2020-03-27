@@ -38,7 +38,7 @@ BIN_LIST_SORTED_PATH = DATA_DIR / 'bin_list_sorted.txt'
 
 # Graphemes
 ICE_ALPHABET = 'aábdðeéfghiíjklmnoóprstuúvxyýþæö'
-OTHER_CHARS = ' .,?!:„“-–'
+OTHER_CHARS = ' .,?!:„“-'
 
 # Phonemes
 SIL_PHONE = '~'
